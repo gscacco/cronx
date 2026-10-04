@@ -1,0 +1,7 @@
+# A configuration that is wrong in exactly one way: the number of retries
+# cannot be negative.
+
+[jobs.backup]
+schedule = "0 3 * * *"
+command = "/usr/local/bin/backup"
+retry = -1
