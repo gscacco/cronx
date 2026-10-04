@@ -18,6 +18,10 @@ live under `~/.cronx/`.
 | `run-once <job>` | Run a job immediately, whatever its schedule. |
 | `run` | Run the scheduler in the foreground until it is stopped. |
 
+Every command below can be tried against the configuration files kept in
+[`examples/configs/`](../examples/configs/), which are described one by one in
+[examples.md](examples.md).
+
 The exit status is `0` on success and `1` on failure. `run-once` fails when the
 job did not succeed, so it can be used in scripts.
 
@@ -27,11 +31,16 @@ job did not succeed, so it can be used in scripts.
 $ cronx validate
 /home/user/.cronx/config.toml is valid
 
-$ cronx validate --config ./broken.toml
-cronx: invalid configuration: job "backup": command "backup" must be an absolute path
+$ cronx validate --config examples/configs/broken.toml
+cronx: invalid configuration: scheduler.max_parallel_jobs must be at least 1, got 0
+logging.level "verbose" is not one of debug, error, info, warn
+job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, got 4
+job "backup": command "backup" must be an absolute path
+...
 ```
 
-All problems are reported at once. The rules are listed in
+All problems are reported at once; the complete output of that file is in
+[examples.md](examples.md). The rules are listed in
 [configuration.md](configuration.md).
 
 ## list

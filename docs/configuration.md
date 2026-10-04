@@ -13,6 +13,15 @@ The configuration path is resolved in this order:
 2. the `CRONX_CONFIG` environment variable;
 3. the default `~/.cronx/config.toml`.
 
+## Reference examples
+
+Complete files to copy are kept in
+[`examples/configs/`](../examples/configs/) and are described one by one in
+[examples.md](examples.md): the smallest file cronx accepts, one using every
+field below, a realistic set-up for a server and one that is deliberately
+invalid. The test suite reads them, so they cannot drift away from what cronx
+accepts.
+
 ## Structure
 
 ```toml
@@ -82,14 +91,20 @@ The following rules are enforced:
 - `max_parallel_jobs` must be at least 1;
 - `logging.level` must be one of `debug`, `info`, `warn`, `error`.
 
-Example of explicit failure:
+Example of explicit failure, using the deliberately invalid
+[`examples/configs/broken.toml`](../examples/configs/broken.toml):
 
 ```console
-$ cronx validate --config ./bad.toml
-cronx: invalid configuration: job "backup": schedule is required
+$ cronx validate --config examples/configs/broken.toml
+cronx: invalid configuration: scheduler.max_parallel_jobs must be at least 1, got 0
+logging.level "verbose" is not one of debug, error, info, warn
+job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, got 4
 job "backup": command "backup" must be an absolute path
-job "backup": overlap "sometimes" is not one of skip, allow, queue
+...
 ```
+
+The whole output, and the mistake behind each line, is listed in
+[examples.md](examples.md).
 
 ## Security notes
 
