@@ -1,0 +1,12 @@
+# Configuration for a job that leaves a mark a test can look for.
+#
+# The schedule fires once a minute, which is the finest granularity a cron
+# expression supports: a test waits for the run instead of sleeping.
+#
+#   @TEST_DIR@    a directory only the test knows, removed with it
+#   @JOB_HELPER@  the compiled program the job runs
+
+[jobs.heartbeat]
+schedule = "* * * * *"
+command = "@JOB_HELPER@"
+args = ["write", "@TEST_DIR@/heartbeat", "ran", "out", "the heartbeat ran"]
