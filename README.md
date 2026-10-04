@@ -49,6 +49,40 @@ make lint    # go vet + formatting check
 make ci      # what continuous integration runs
 ```
 
+## Quick start
+
+Write `~/.cronx/config.toml`:
+
+```toml
+[scheduler]
+timezone = "Europe/Rome"
+max_parallel_jobs = 2
+
+[jobs.backup]
+schedule = "0 3 * * *"
+command = "/usr/local/bin/backup"
+args = ["--incremental"]
+timeout = "30m"
+retry = 1
+
+[jobs.report]
+schedule = "*/15 * * * *"
+command = "/usr/local/bin/report"
+```
+
+Then:
+
+```sh
+cronx validate          # check the file before trusting it
+cronx list              # see when each job runs next
+cronx run-once backup   # try a job immediately
+cronx run               # leave the scheduler running
+```
+
+`cronx run` stays in the foreground and writes to `~/.cronx/logs/cronx.log`.
+The output of each run is kept in `~/.cronx/logs/<job>/<run id>.log`, and the
+history is in `~/.cronx/state.db`.
+
 ## Usage
 
 The configuration path is resolved from `--config`, then `CRONX_CONFIG`, then
