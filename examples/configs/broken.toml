@@ -1,0 +1,28 @@
+# A deliberately invalid configuration, kept in the repository as a reference
+# for what the diagnostics look like:
+#
+#   cronx validate --config examples/configs/broken.toml
+#
+# Every problem is reported at once, so that one run is enough to fix them all.
+# The comment beside each line is what cronx says about it.
+
+[scheduler]
+timezone = "Europe/Rome"
+max_parallel_jobs = 0               # must be at least 1
+
+[logging]
+level = "verbose"                   # must be debug, info, warn or error
+
+[jobs.backup]
+schedule = "0 3 * *"                # a five-field expression is required
+command = "backup"                  # must be an absolute path
+retry = -1                          # must not be negative
+
+[jobs.cleanup]
+schedule = "@daily"                 # the @ shortcuts are not supported
+command = "/usr/local/bin/cleanup"
+overlap = "sometimes"               # must be skip, allow or queue
+timeout = "30 minutes"              # must be a duration such as 30m
+
+[jobs.report]
+command = "/usr/local/bin/report"   # schedule is required

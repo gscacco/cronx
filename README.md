@@ -103,6 +103,10 @@ semantics in [docs/scheduling.md](docs/scheduling.md), the execution and
 security model in [docs/security.md](docs/security.md) and the database in
 [docs/persistence.md](docs/persistence.md).
 
+Complete configuration files to copy and try are kept in
+[`examples/configs/`](examples/configs/) and described one by one in
+[docs/examples.md](docs/examples.md).
+
 ## Repository layout
 
 ```
@@ -116,6 +120,7 @@ internal/store/     SQLite persistence: history and runtime state
 internal/logx/      log layout and per-run log files
 internal/scheduler/ the scheduling loop and the execution policies
 internal/cli/       command-line commands
+examples/           configuration files kept as a reference
 docs/               design and reference documentation
 ```
 

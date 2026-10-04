@@ -2,50 +2,14 @@ package cli_test
 
 import (
 	"fmt"
-	"os"
-	"strconv"
 	"strings"
 	"testing"
 )
-
-// The run-once tests execute the test binary itself, so no shell is involved.
-const (
-	helperMarker = "CRONX_TEST_HELPER"
-	helperMode   = "CRONX_TEST_MODE"
-	helperExit   = "CRONX_TEST_EXIT"
-)
-
-// printedByTheJob is what the helper process writes to its standard output, so
-// that the tests can find it in the log file of the run.
-const printedByTheJob = "printed by the job"
-
-func TestHelperProcess(t *testing.T) {
-	if os.Getenv(helperMarker) != "1" {
-		return
-	}
-	switch os.Getenv(helperMode) {
-	case "ok":
-		// Nothing to do.
-	case "print":
-		fmt.Println(printedByTheJob)
-	case "fail":
-		code, err := strconv.Atoi(os.Getenv(helperExit))
-		if err != nil {
-			os.Exit(2)
-		}
-		os.Exit(code)
-	}
-	os.Exit(0)
-}
 
 // runOnceConfig builds a configuration whose single job runs the test binary in
 // the given helper mode.
 func runOnceConfig(t *testing.T, mode, exitCode string) string {
 	t.Helper()
-	executable, err := os.Executable()
-	if err != nil {
-		t.Fatalf("locating the test executable: %v", err)
-	}
 
 	return fmt.Sprintf(`
 [jobs.hello]
@@ -54,7 +18,7 @@ command = %q
 args = ["-test.run=TestHelperProcess"]
 env = { %s = "1", %s = %q, %s = %q }
 `,
-		executable,
+		testExecutable(t),
 		helperMarker, helperMode, mode, helperExit, exitCode)
 }
 

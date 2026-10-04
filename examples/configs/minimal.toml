@@ -1,0 +1,14 @@
+# The smallest configuration cronx accepts: one job described by the two
+# fields every job must have.
+#
+#   cronx validate --config examples/configs/minimal.toml
+#   cronx list     --config examples/configs/minimal.toml
+#   cronx run-once hello --config examples/configs/minimal.toml
+#
+# `command` is an absolute path. cronx never looks a command up in PATH and
+# never runs it through a shell, so the executable must already exist on the
+# machine; the one below is a placeholder for a program of your own.
+
+[jobs.hello]
+schedule = "*/5 * * * *"            # every five minutes
+command = "/usr/local/bin/hello"

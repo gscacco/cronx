@@ -1,0 +1,47 @@
+# Configuration fixture for the workflow tests in this package.
+#
+# Unlike the reference examples in examples/configs, this file is executed: the
+# tests render it and replace the two placeholders below with paths they
+# control, then drive the commands against the result.
+#
+#   @TEST_EXECUTABLE@  the test binary, re-entered in its helper mode
+#   @TEST_WORKDIR@     a fresh directory used as working directory
+#
+# It is kept as a file rather than built by the tests so that the
+# configuration a job is described by can be read in one place.
+
+[scheduler]
+timezone = "UTC"
+max_parallel_jobs = 2
+
+[logging]
+level = "debug"
+
+# Reports its working directory and the names of the variables it received, so
+# that the tests can check that a job sees exactly what the configuration asked
+# for and nothing else.
+[jobs.report]
+schedule = "*/5 * * * *"
+command = "@TEST_EXECUTABLE@"
+args = ["-test.run=TestHelperProcess"]
+working_directory = "@TEST_WORKDIR@"
+timeout = "30s"
+env = { CRONX_TEST_HELPER = "1", CRONX_TEST_MODE = "report", CRONX_TEST_MESSAGE = "hello from the fixture" }
+
+# Fails every time, so that one trigger becomes three attempts, each of them
+# recorded in the history with its own exit code.
+[jobs.flaky]
+schedule = "0 4 * * *"
+command = "@TEST_EXECUTABLE@"
+args = ["-test.run=TestHelperProcess"]
+retry = 2
+env = { CRONX_TEST_HELPER = "1", CRONX_TEST_MODE = "fail", CRONX_TEST_EXIT = "3" }
+
+# Never finishes on its own, so that the timeout of the configuration is what
+# ends the run.
+[jobs.slow]
+schedule = "0 5 * * *"
+command = "@TEST_EXECUTABLE@"
+args = ["-test.run=TestHelperProcess"]
+timeout = "1s"
+env = { CRONX_TEST_HELPER = "1", CRONX_TEST_MODE = "sleep" }
