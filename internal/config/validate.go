@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gscacco.com/cronx/internal/job"
+	"gscacco.com/cronx/internal/schedule"
 )
 
 // buildJob converts a raw TOML job into the domain model, collecting every
@@ -32,6 +33,8 @@ func buildJob(name string, raw rawJob) (job.Job, []error) {
 	}
 	if strings.TrimSpace(raw.Schedule) == "" {
 		problems = append(problems, fmt.Errorf("job %q: schedule is required", name))
+	} else if _, err := schedule.Parse(raw.Schedule); err != nil {
+		problems = append(problems, fmt.Errorf("job %q: schedule is not valid: %w", name, err))
 	}
 	if strings.TrimSpace(raw.Command) == "" {
 		problems = append(problems, fmt.Errorf("job %q: command is required", name))
