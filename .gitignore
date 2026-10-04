@@ -1,0 +1,23 @@
+# Build artifacts
+/bin/
+/dist/
+/cronx
+
+# Go
+*.test
+*.out
+coverage.txt
+
+# Local runtime state (never committed)
+*.db
+*.sqlite
+*.sqlite3
+
+# Nix
+result
+result-*
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
