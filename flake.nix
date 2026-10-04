@@ -42,7 +42,7 @@
           src = ./.;
           # Hash of the vendored Go dependencies. Update it whenever the
           # dependency set changes (Nix reports the expected value on mismatch).
-          vendorHash = "sha256-n58Qmiv3gik1qkuXQFbQ+soeOQtUz1dUocEAJepqp/E=";
+          vendorHash = "sha256-4oVBrZtpOI4U98ugjh22SMAGIzPMzGLMSQraxjDzZv0=";
           meta = {
             description = "A small, reliable, portable and secure local job scheduler";
             license = pkgs.lib.licenses.mit;
