@@ -15,12 +15,18 @@ import (
 func TestTheHistorySurvivesARestart(t *testing.T) {
 	t.Parallel()
 
-	// SETUP
+	// SETUP: one run, recorded by the command that runs a job once. What this
+	// test is about is the state the run leaves behind, and a scheduled run
+	// would first have to wait for a real minute boundary to produce the very
+	// same row.
 	environment := newEnvironment(t)
 	configPath := environment.configure("persistence.toml")
 
+	environment.runOK("run-once", "tick", "--config", configPath)
+	firstRun := environment.latestRun("tick")
+
+	// A scheduler opens the state the run left behind.
 	first := environment.startScheduler(configPath)
-	firstRun := environment.waitForRun("tick", job.StatusSucceeded, activationBudget)
 	if code := first.stop(); code != 0 {
 		t.Fatalf("the first scheduler exited with status %d, want success\nstdout:\n%s\nstderr:\n%s",
 			code, first.stdout(), first.stderr())
@@ -28,9 +34,10 @@ func TestTheHistorySurvivesARestart(t *testing.T) {
 	stateBefore := environment.stateInfo()
 
 	// EXERCISE: start a second scheduler on the same configuration and the same
-	// state database.
+	// state database, and run the job once more.
 	second := environment.startScheduler(configPath)
-	secondRun := environment.waitForRunAfter("tick", firstRun.ID, job.StatusSucceeded, activationBudget)
+	environment.runOK("run-once", "tick", "--config", configPath)
+	secondRun := environment.latestRun("tick")
 	if code := second.stop(); code != 0 {
 		t.Errorf("the second scheduler exited with status %d, want success", code)
 	}
@@ -86,19 +93,27 @@ func TestTheHistorySurvivesARestart(t *testing.T) {
 func TestRunsLeftInProgressAreClosedOnTheNextStart(t *testing.T) {
 	t.Parallel()
 
-	// SETUP
+	// SETUP: a cronx process is left with a run in progress by killing it
+	// before it can record the outcome. It is "run-once" rather than a
+	// scheduler because what is being tested is what the next scheduler makes
+	// of the row, not how the row came to be: a scheduler would first have to
+	// wait for a real minute boundary, and the state it leaves behind is the
+	// same.
 	environment := newEnvironment(t)
 	configPath := environment.configure("stale.toml")
 
-	first := environment.startScheduler(configPath)
-	running := environment.waitForRun("long", job.StatusRunning, activationBudget)
+	interrupted := environment.start("run-once", "long", "--config", configPath)
+	// The report is written by the job itself, and a job only starts once its
+	// run has been recorded: waiting for the report is also what tells this
+	// test that the state database exists, since no test creates it.
 	report := environment.waitForReport(environment.path("long.json"), settleBudget)
-	// The job outlives the scheduler it belongs to, which is about to be killed
+	running := environment.waitForRun("long", job.StatusRunning, activationBudget)
+	// The job outlives the process it belongs to, which is about to be killed
 	// without being given the chance to stop it.
 	t.Cleanup(func() { removeProcess(report.PID) })
 
-	// EXERCISE: kill the scheduler, then start another one on the same state.
-	first.kill()
+	// EXERCISE: kill the process, then start a scheduler on the same state.
+	interrupted.kill()
 	second := environment.startScheduler(configPath)
 	closed := environment.waitForRunWhere("long", settleBudget, func(run store.Run) bool {
 		return run.ID == running.ID && run.Status == job.StatusFailed

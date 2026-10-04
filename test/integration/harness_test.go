@@ -31,6 +31,12 @@ const (
 // The budgets the tests wait with. They are generous on purpose: cronx
 // schedules to the minute, which is the finest granularity a cron expression
 // supports, so "the job runs soon" can legitimately take almost a minute.
+//
+// Only the scheduling tests wait that long, because they are the only ones that
+// need a real activation: they run in parallel, and the fast suite (go test
+// -short) skips them. Everything else waits for a process to do something it was
+// asked to do, which takes at most the grace period of a job that refuses to
+// stop.
 const (
 	// pollInterval is how often a test looks again at what it waits for.
 	pollInterval = 100 * time.Millisecond
@@ -538,16 +544,6 @@ func (e *environment) waitForRun(name string, status job.Status, budget time.Dur
 	e.t.Helper()
 	return e.waitForRunWhere(name, budget, func(run store.Run) bool {
 		return run.Status == status
-	})
-}
-
-// waitForRunAfter waits until a run of the job recorded after the given one
-// reaches the given status. It is how a test tells a new run from one it has
-// already seen.
-func (e *environment) waitForRunAfter(name string, id int64, status job.Status, budget time.Duration) store.Run {
-	e.t.Helper()
-	return e.waitForRunWhere(name, budget, func(run store.Run) bool {
-		return run.Status == status && run.ID > id
 	})
 }
 

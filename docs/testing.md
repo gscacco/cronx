@@ -11,23 +11,32 @@ mocked and nothing is linked into the test process.
 
 ```sh
 nix develop            # the pinned Go toolchain, Git and the SQLite CLI
-make test              # everything: unit tests and integration tests
-make ci                # go vet, formatting, all tests, a build
+make test              # the fast suite: seconds
+make test-full         # every test, including the ones that wait for a minute boundary
+make ci                # go vet, formatting, the full suite, a build
 ```
 
 Individually:
 
 ```sh
 go test ./...                  # every package
+go test -short ./...           # the same without the minute waits, which is what make test runs
 go test ./test/integration/ -v # only the end-to-end tests
 go test ./test/integration/ -run TestTheHistorySurvivesARestart -v
 ```
 
-The integration suite takes a few minutes rather than seconds, because a cron
-expression decides *minutes*: a test that needs a job to run has to wait for the
-next minute boundary, which can be almost a minute away. The tests that wait are
-marked `t.Parallel()`, so the suite takes about as long as its slowest test
-rather than the sum of all of them.
+The fast suite takes seconds and the full one a minute or two. Two end-to-end
+tests have to wait for a real minute boundary, because a cron expression decides
+*minutes*: the scheduled run that gets recorded, and the overlapping trigger that
+gets skipped, which needs two boundaries in a row. They are marked
+`t.Parallel()`, so they overlap with each other, and they skip themselves under
+`go test -short`, which is what `make test` uses; `make test-full` — and the
+check phase of the Nix package — runs them. Everything else is fast, because a
+test that needs recorded runs produces them with `run-once`, or by killing a
+process, instead of waiting for the clock. The slowest test left in the fast
+suite watches the ten second grace period before a job that refuses SIGTERM is
+killed, which is the only wait that cannot be shortened without changing what is
+being tested.
 
 ## What the integration tests check
 

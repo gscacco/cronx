@@ -12,9 +12,16 @@ import (
 // The scheduling tests run the real scheduler, which plans its activations from
 // a cron expression and therefore works to the minute. They wait for what the
 // job does instead of sleeping, which is what makes them both deterministic and
-// slower than the rest.
+// slower than the rest: they are the only tests of this package that wait for a
+// real minute boundary, so they skip themselves under `go test -short`.
 
 func TestAScheduledJobRunsAndIsRecorded(t *testing.T) {
+	// A scheduled run waits for a real minute boundary. It is the cost of
+	// testing the real scheduler, so the fast suite (go test -short, which is
+	// what make test runs) leaves it to the full one (make test-full).
+	if testing.Short() {
+		t.Skip("a scheduled job waits for a real minute boundary: run the full suite with make test-full")
+	}
 	t.Parallel()
 
 	// SETUP
@@ -101,6 +108,12 @@ func TestAScheduledJobRunsAndIsRecorded(t *testing.T) {
 }
 
 func TestAnOverlappingRunIsSkipped(t *testing.T) {
+	// A trigger can only overlap a run that a real activation started, and the
+	// activation after that one is a minute away: this is the slowest test of
+	// the suite, and the fast one (go test -short) leaves it alone.
+	if testing.Short() {
+		t.Skip("the overlapping trigger arrives at a second real minute boundary: run the full suite with make test-full")
+	}
 	t.Parallel()
 
 	// SETUP: the job takes several minutes, so every activation after the

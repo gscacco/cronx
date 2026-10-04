@@ -12,7 +12,7 @@ GO       ?= go
 BINARY   ?= cronx
 PACKAGES ?= ./...
 
-.PHONY: all build test vet fmt fmt-check lint ci clean
+.PHONY: all build test test-full vet fmt fmt-check lint ci clean
 
 all: ci
 
@@ -20,9 +20,14 @@ all: ci
 build:
 	$(GO) build -o bin/$(BINARY) ./cmd/cronx
 
-## test: run the full test suite
+## test: run the fast test suite: everything except the tests that wait for a minute boundary
 test:
-	$(GO) test $(PACKAGES)
+	@echo "fast suite: the tests that wait for a real minute boundary are skipped (make test-full runs everything)"
+	$(GO) test -short -timeout 120s $(PACKAGES)
+
+## test-full: run every test, including the ones that wait for a real minute boundary
+test-full:
+	$(GO) test -timeout 300s $(PACKAGES)
 
 ## vet: run go vet
 vet:
@@ -44,8 +49,8 @@ fmt-check:
 ## lint: run static checks (vet + formatting)
 lint: vet fmt-check
 
-## ci: everything continuous integration runs
-ci: lint test build
+## ci: everything continuous integration runs, with the full test suite
+ci: lint test-full build
 
 ## clean: remove build artifacts
 clean:

@@ -88,11 +88,16 @@ go run ./cmd/cronx --help
 The repository also ships a `Makefile` whose targets only call `go`:
 
 ```sh
-make build   # go build -o bin/cronx ./cmd/cronx
-make test    # go test ./... — unit tests and the end-to-end suite
-make lint    # go vet and a gofmt check
-make ci      # lint, tests, build
+make build      # go build -o bin/cronx ./cmd/cronx
+make test       # the fast suite: go test -short ./..., in seconds
+make test-full  # every test, including the two that wait for a real minute boundary
+make lint       # go vet and a gofmt check
+make ci         # lint, the full suite, build
 ```
+
+`make test` is the everyday command, and takes about ten seconds: it leaves out
+the two end-to-end tests that wait for a real minute boundary. What each suite
+covers is listed in [`docs/testing.md`](docs/testing.md).
 
 The resulting binary is self-contained. It needs no shell, no Nix and no
 installed library at runtime.
@@ -117,7 +122,8 @@ nix develop -c make build   # build ./bin/cronx inside the shell
 ```
 
 The flake also packages the binary, and building the package runs the test suite
-in its check phase:
+in its check phase — the full one, including the minute waits, so it takes a
+minute or two:
 
 ```sh
 nix build .#default         # result/bin/cronx

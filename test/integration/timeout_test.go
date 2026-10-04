@@ -12,6 +12,11 @@ import (
 // own is stopped, and that stopping it stops what it started.
 
 func TestAJobThatExceedsItsTimeoutIsStopped(t *testing.T) {
+	// The timeout tests are the slowest of the fast suite, because each of them
+	// waits for a real timeout to expire: they run together, so that the suite
+	// waits for the longest one instead of their sum.
+	t.Parallel()
+
 	if !processesCanBeInspected() {
 		t.Skip("this system cannot be asked whether a process is still running")
 	}
@@ -57,6 +62,8 @@ func TestAJobThatExceedsItsTimeoutIsStopped(t *testing.T) {
 }
 
 func TestStoppingAJobStopsWhatTheJobStarted(t *testing.T) {
+	t.Parallel()
+
 	if !processesCanBeInspected() {
 		t.Skip("this system cannot be asked whether a process is still running")
 	}
@@ -97,6 +104,8 @@ func TestStoppingAJobStopsWhatTheJobStarted(t *testing.T) {
 }
 
 func TestAJobThatIgnoresTheRequestToStopIsKilled(t *testing.T) {
+	t.Parallel()
+
 	if !processesCanBeInspected() {
 		t.Skip("this system cannot be asked whether a process is still running")
 	}
