@@ -68,6 +68,41 @@ search horizon is twelve years, which comfortably covers the largest real gap
 between two activations: 29 February around a century that is not a leap year,
 for example 2096 and 2104.
 
+## When a job runs
+
+Two questions are answered separately:
+
+- the cron expression answers *when* a job is due;
+- the execution policy answers *what happens* when it becomes due while a
+  previous run is still in progress.
+
+### Overlap
+
+| Policy  | Behaviour when a run is still in progress |
+| ------- | ----------------------------------------- |
+| `skip` (default) | The new trigger is ignored and recorded as a `skipped` run, with the reason. |
+| `allow` | A second run starts immediately, alongside the first. |
+| `queue` | The new run waits until the previous one has finished, then starts. |
+
+### Retries
+
+`retry = N` means up to `N` further attempts after the first one fails. Every
+attempt is recorded separately, with its own attempt number and its own log
+file, so the history shows exactly what happened. There is no backoff in this
+version: a retry follows immediately.
+
+### Parallelism
+
+`max_parallel_jobs` bounds how many jobs run at the same time. When more jobs
+are due than there are free slots, the extra ones wait for a slot rather than
+being dropped.
+
+### Stopping
+
+When the scheduler is asked to stop, jobs that are still running are stopped
+too: they receive `SIGTERM` and are killed after the grace period, and the
+scheduler waits for them before exiting.
+
 ## Examples
 
 | Expression            | Meaning |
