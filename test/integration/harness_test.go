@@ -708,3 +708,15 @@ func permissionMode(t *testing.T, path string) os.FileMode {
 	}
 	return info.Mode().Perm()
 }
+
+// physicalPath returns a path as the processes of the machine report it, so
+// that a comparison holds also where a temporary directory is reached through a
+// symbolic link.
+func physicalPath(t *testing.T, path string) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		t.Fatalf("resolving %s: %v", path, err)
+	}
+	return resolved
+}

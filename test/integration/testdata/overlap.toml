@@ -1,0 +1,12 @@
+# Configuration for a job that takes longer than the minute between two
+# activations, so that the second activation arrives while the first run is
+# still in progress.
+#
+# The job appends a line when it starts, which is how a test can tell how many
+# executions really happened: a duplicated run would leave two lines behind.
+
+[jobs.tick]
+schedule = "* * * * *"
+command = "@JOB_HELPER@"
+args = ["append", "@TEST_DIR@/ticks", "started\n", "sleep", "240s"]
+overlap = "skip"

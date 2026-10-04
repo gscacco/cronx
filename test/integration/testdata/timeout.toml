@@ -1,0 +1,27 @@
+# Configuration for the timeouts of a job.
+#
+# Every job here fails to stop on its own: the timeout of the configuration is
+# what ends the run.
+
+# A plain long runner: the smallest thing that outlives its timeout.
+[jobs.overrun]
+schedule = "0 3 * * *"
+command = "@JOB_HELPER@"
+args = ["report", "@TEST_DIR@/overrun.json", "sleep", "120s"]
+timeout = "1s"
+
+# A job that starts a child of its own. Stopping the job must stop the child
+# too, because a job runs in a process group of its own.
+[jobs.family]
+schedule = "0 4 * * *"
+command = "@JOB_HELPER@"
+args = ["report", "@TEST_DIR@/family.json", "spawn", "@TEST_DIR@/child.json", "120s"]
+timeout = "1s"
+
+# A job that refuses the polite request to stop, so that the grace period has
+# to run out before it is killed.
+[jobs.stubborn]
+schedule = "0 5 * * *"
+command = "@JOB_HELPER@"
+args = ["report", "@TEST_DIR@/stubborn.json", "ignore-term", "120s"]
+timeout = "1s"
