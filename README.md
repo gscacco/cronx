@@ -49,6 +49,10 @@ make lint    # go vet + formatting check
 make ci      # what continuous integration runs
 ```
 
+`make test` runs the unit tests and the end-to-end tests under
+[`test/integration/`](test/integration/), which drive the compiled binary as a
+real process. They are described in [docs/testing.md](docs/testing.md).
+
 ## Quick start
 
 Write `~/.cronx/config.toml`:
@@ -101,7 +105,8 @@ Every command is described in [docs/cli.md](docs/cli.md), the configuration
 format in [docs/configuration.md](docs/configuration.md), the scheduling
 semantics in [docs/scheduling.md](docs/scheduling.md), the execution and
 security model in [docs/security.md](docs/security.md) and the database in
-[docs/persistence.md](docs/persistence.md).
+[docs/persistence.md](docs/persistence.md). How the tests verify all of that is
+in [docs/testing.md](docs/testing.md).
 
 Complete configuration files to copy and try are kept in
 [`examples/configs/`](examples/configs/) and described one by one in
@@ -120,6 +125,7 @@ internal/store/     SQLite persistence: history and runtime state
 internal/logx/      log layout and per-run log files
 internal/scheduler/ the scheduling loop and the execution policies
 internal/cli/       command-line commands
+test/integration/   end-to-end tests that drive the compiled binary
 examples/           configuration files kept as a reference
 docs/               design and reference documentation
 ```
