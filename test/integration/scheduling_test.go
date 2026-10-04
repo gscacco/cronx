@@ -78,7 +78,7 @@ func TestAScheduledJobRunsAndIsRecorded(t *testing.T) {
 	}
 
 	// The scheduler recorded what it did in its own log too.
-	if log := environment.readFile(environment.schedulerLog()); !strings.Contains(log, "scheduler started") {
+	if log := environment.readFile(environment.schedulerLog()); !strings.Contains(log, schedulerStarted) {
 		t.Errorf("the scheduler log holds %q, want it to record that the scheduler started", log)
 	}
 
@@ -89,10 +89,79 @@ func TestAScheduledJobRunsAndIsRecorded(t *testing.T) {
 	if code != 0 {
 		t.Errorf("the scheduler exited with status %d, want success", code)
 	}
-	if count := environment.runningRuns("heartbeat"); count != 0 {
-		t.Errorf("%d runs are still recorded as in progress, want none after a clean stop", count)
+	if runs := environment.runs("heartbeat"); len(runs) != 1 {
+		t.Errorf("%d runs are recorded after the stop, want only the one that ran", len(runs))
+	}
+	if finished := environment.latestRun("heartbeat"); finished.Status != job.StatusSucceeded {
+		t.Errorf("the run that had finished is recorded as %q, want %q", finished.Status, job.StatusSucceeded)
 	}
 	if _, err := os.Stat(environment.statePath()); err != nil {
 		t.Errorf("the state database is missing: %v", err)
 	}
+}
+
+func TestAnOverlappingRunIsSkipped(t *testing.T) {
+	t.Parallel()
+
+	// SETUP: the job takes several minutes, so every activation after the
+	// first arrives while the first run is still going.
+	environment := newEnvironment(t)
+	configPath := environment.configure("overlap.toml")
+	scheduler := environment.startScheduler(configPath)
+
+	// EXERCISE: wait for the first run, then for the trigger that arrives
+	// while it is still in progress.
+	first := environment.waitForRun("tick", job.StatusRunning, activationBudget)
+	skipped := environment.waitForRun("tick", job.StatusSkipped, overlapBudget)
+
+	// VERIFY
+	if skipped.ID <= first.ID {
+		t.Errorf("the skipped trigger (run %d) was recorded before the run it overlaps (run %d)",
+			skipped.ID, first.ID)
+	}
+	if skipped.Attempt != 0 {
+		t.Errorf("the skipped trigger is recorded as attempt %d, want 0 because no process was attempted",
+			skipped.Attempt)
+	}
+	if skipped.ExitCode != nil {
+		t.Errorf("the skipped run recorded the exit code %d, want none because no process ran", *skipped.ExitCode)
+	}
+
+	// The job ran once: a second, concurrent execution would have left a
+	// second line behind.
+	if ticks := environment.lines(environment.path("ticks")); len(ticks) != 1 {
+		t.Errorf("the job started %d times, want once: %v", len(ticks), ticks)
+	}
+	if count := environment.runningRuns("tick"); count != 1 {
+		t.Errorf("%d runs of the job are in progress, want exactly the first one", count)
+	}
+
+	// What a person reading the history sees: the skipped trigger, with no
+	// exit status because no process ran.
+	history := environment.runOK("history", "tick", "--config", configPath)
+	row := historyRowForAttempt(t, history.stdout, "tick", 0)
+	if row.status != string(job.StatusSkipped) {
+		t.Errorf("history reports the skipped trigger as %q, want %q", row.status, job.StatusSkipped)
+	}
+	if row.exit != "-" {
+		t.Errorf("history reports the exit status of the skipped trigger as %q, want a dash", row.exit)
+	}
+
+	// The scheduler is still running and stops cleanly, stopping the job it was
+	// running with it.
+	if !scheduler.running() {
+		t.Fatalf("the scheduler exited on its own\nstdout:\n%s\nstderr:\n%s",
+			scheduler.stdout(), scheduler.stderr())
+	}
+	report := environment.waitForReport(environment.path("tick.json"), settleBudget)
+	t.Cleanup(func() { removeProcess(report.PID) })
+	if code := scheduler.stop(); code != 0 {
+		t.Errorf("the scheduler exited with status %d, want success", code)
+	}
+	if !processesCanBeInspected() {
+		return
+	}
+	environment.waitFor("the job to be stopped", settleBudget, func() bool {
+		return !processAlive(report.PID)
+	})
 }

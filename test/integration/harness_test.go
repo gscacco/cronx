@@ -56,11 +56,12 @@ const (
 // own configuration, its own state database and its own logs. Nothing a test
 // does can reach the real ones.
 type environment struct {
-	t        *testing.T
-	home     string
-	dir      string
-	database *store.Store
-	started  int
+	t          *testing.T
+	home       string
+	dir        string
+	database   *store.Store
+	started    int
+	schedulers int
 }
 
 // newEnvironment prepares an isolated home for a test.
@@ -260,12 +261,29 @@ func (e *environment) runOnce(configPath, name string) result {
 	return e.run("run-once", name, "--config", configPath)
 }
 
-// startScheduler starts the scheduler with the given configuration and returns
-// the running process.
+// startScheduler starts the scheduler and waits until it has opened its state:
+// only then is it safe for the test to read the database, because the first
+// thing a scheduler does is migrate it. A test that reads the database while a
+// scheduler is migrating it would be racing the migration.
 func (e *environment) startScheduler(configPath string) *process {
 	e.t.Helper()
-	return e.start("run", "--config", configPath)
+
+	e.schedulers++
+	wanted := e.schedulers
+	running := e.start("run", "--config", configPath)
+	e.waitFor("the scheduler to start", activationBudget, func() bool {
+		if !running.running() {
+			e.t.Fatalf("the scheduler exited before it started\nstdout:\n%s\nstderr:\n%s",
+				running.stdout(), running.stderr())
+		}
+		return strings.Count(readProcessOutput(e.schedulerLog()), schedulerStarted) >= wanted
+	})
+	return running
 }
+
+// schedulerStarted is what a scheduler records once it has opened its state and
+// planned the activations.
+const schedulerStarted = "scheduler started"
 
 // process is a cronx process that is expected to keep running. Its output is
 // written to files in the scratch directory, so that a test which fails while
@@ -443,10 +461,16 @@ const defaultRunLimit = 20
 // state opens the state database of the environment. Reading it while the
 // scheduler is running is safe: the database is opened in write-ahead logging
 // mode, so a reader sees the latest committed state.
+//
+// The database is never created by a test: it is created by a cronx process, so
+// that a test cannot race the migrations of a process that is starting.
 func (e *environment) state() *store.Store {
 	e.t.Helper()
 	if e.database != nil {
 		return e.database
+	}
+	if _, err := os.Stat(e.statePath()); err != nil {
+		e.t.Fatalf("the state database does not exist: %v\n%s", err, e.describe())
 	}
 	persistent, err := store.Open(e.statePath())
 	if err != nil {
@@ -578,25 +602,6 @@ func (e *environment) waitForReport(path string, budget time.Duration) report {
 	}
 }
 
-// waitForFile waits until a file exists and returns its content.
-func (e *environment) waitForFile(path string, budget time.Duration) string {
-	e.t.Helper()
-	deadline := time.Now().Add(budget)
-	for {
-		content, err := os.ReadFile(path)
-		if err == nil {
-			return string(content)
-		}
-		if !errors.Is(err, os.ErrNotExist) {
-			e.t.Fatalf("reading %s: %v", path, err)
-		}
-		if time.Now().After(deadline) {
-			e.t.Fatalf("%s does not exist after %s\n%s", path, budget, e.describe())
-		}
-		time.Sleep(pollInterval)
-	}
-}
-
 // waitFor waits until check reports true.
 func (e *environment) waitFor(description string, budget time.Duration, check func() bool) {
 	e.t.Helper()
@@ -615,10 +620,14 @@ func (e *environment) waitFor(description string, budget time.Duration, check fu
 // describe summarises the state of the environment, for a failure message.
 func (e *environment) describe() string {
 	var summary strings.Builder
-	fmt.Fprintf(&summary, "runs recorded:")
-	for _, run := range e.runs("") {
-		fmt.Fprintf(&summary, "\n  id=%d job=%s attempt=%d status=%s exit=%s error=%q log=%s",
-			run.ID, run.Job, run.Attempt, run.Status, exitCodeText(run), run.Error, run.LogPath)
+	if _, err := os.Stat(e.statePath()); err != nil {
+		fmt.Fprintf(&summary, "no state database at %s", e.statePath())
+	} else {
+		fmt.Fprintf(&summary, "runs recorded:")
+		for _, run := range e.runs("") {
+			fmt.Fprintf(&summary, "\n  id=%d job=%s attempt=%d status=%s exit=%s error=%q log=%s",
+				run.ID, run.Job, run.Attempt, run.Status, exitCodeText(run), run.Error, run.LogPath)
+		}
 	}
 	if log := readProcessOutput(e.schedulerLog()); log != "" {
 		fmt.Fprintf(&summary, "\nscheduler log:\n%s", lastLines(log, 20))
