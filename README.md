@@ -51,16 +51,23 @@ make ci      # what continuous integration runs
 
 ## Usage
 
-Validate a configuration file (the path is resolved from `--config`, then
-`CRONX_CONFIG`, then `~/.cronx/config.toml`):
+The configuration path is resolved from `--config`, then `CRONX_CONFIG`, then
+`~/.cronx/config.toml`.
 
 ```sh
-cronx validate
-cronx validate --config ./config.toml
+cronx validate                   # check the configuration file
+cronx list                       # jobs, their schedule and when they run next
+cronx status                     # the last outcome of every job
+cronx history backup --limit 10  # the execution history
+cronx run-once backup            # run a job right now
+cronx run                        # run the scheduler in the foreground
 ```
 
-The configuration format is documented in
-[docs/configuration.md](docs/configuration.md).
+Every command is described in [docs/cli.md](docs/cli.md), the configuration
+format in [docs/configuration.md](docs/configuration.md), the scheduling
+semantics in [docs/scheduling.md](docs/scheduling.md), the execution and
+security model in [docs/security.md](docs/security.md) and the database in
+[docs/persistence.md](docs/persistence.md).
 
 ## Repository layout
 
@@ -71,6 +78,9 @@ internal/job/       job domain model
 internal/schedule/  cron expression parsing and next-activation computation
 internal/clock/     injectable time source
 internal/runner/    secure, shell-free job execution
+internal/store/     SQLite persistence: history and runtime state
+internal/logx/      log layout and per-run log files
+internal/scheduler/ the scheduling loop and the execution policies
 internal/cli/       command-line commands
 docs/               design and reference documentation
 ```
