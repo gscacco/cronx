@@ -74,6 +74,12 @@ test/integration/
   outlived a scheduler which was killed on purpose is removed by the identifier
   the helper reported, so a failing test does not leave a sleeping process
   behind.
+* **The tests build the binary they drive.** `TestMain` runs `go build` for
+  `./cmd/cronx` and for the job helper, so the Go toolchain has to be in `PATH`
+  where the tests run, with somewhere to keep its build cache. The development
+  shell and the check phase of the Nix package both provide that; the package
+  provides it together with vendored dependencies, which is why the tests can
+  build offline there.
 
 ## The job helper
 
