@@ -78,6 +78,9 @@ internal/job/       job domain model
 internal/schedule/  cron expression parsing and next-activation computation
 internal/clock/     injectable time source
 internal/runner/    secure, shell-free job execution
+internal/store/     SQLite persistence: history and runtime state
+internal/logx/      log layout and per-run log files
+internal/scheduler/ the scheduling loop and the execution policies
 internal/cli/       command-line commands
 docs/               design and reference documentation
 ```
