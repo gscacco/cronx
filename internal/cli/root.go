@@ -24,7 +24,14 @@ func NewRootCommand() *cobra.Command {
 	root.PersistentFlags().StringVar(&configPath, "config", "",
 		"path to the configuration file (default ~/.cronx/config.toml)")
 
-	root.AddCommand(newValidateCommand(&configPath))
+	root.AddCommand(
+		newValidateCommand(&configPath),
+		newListCommand(&configPath),
+		newStatusCommand(&configPath),
+		newHistoryCommand(&configPath),
+		newRunOnceCommand(&configPath),
+		newRunCommand(&configPath),
+	)
 
 	return root
 }
