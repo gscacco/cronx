@@ -69,6 +69,8 @@ cmd/cronx/          command-line entry point
 internal/config/    configuration loading and validation
 internal/job/       job domain model
 internal/schedule/  cron expression parsing and next-activation computation
+internal/clock/     injectable time source
+internal/runner/    secure, shell-free job execution
 internal/cli/       command-line commands
 docs/               design and reference documentation
 ```
