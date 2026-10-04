@@ -29,6 +29,24 @@ command = "/usr/local/bin/backup"
 			wantErr: "schedule",
 		},
 		{
+			name: "schedule with the wrong number of fields",
+			config: `
+[jobs.backup]
+schedule = "0 3 * *"
+command = "/usr/local/bin/backup"
+`,
+			wantErr: "schedule",
+		},
+		{
+			name: "schedule with a value out of range",
+			config: `
+[jobs.backup]
+schedule = "0 25 * * *"
+command = "/usr/local/bin/backup"
+`,
+			wantErr: "schedule",
+		},
+		{
 			name: "missing command",
 			config: `
 [jobs.backup]

@@ -73,6 +73,8 @@ The following rules are enforced:
 - unknown keys anywhere in the document are rejected (typos are not ignored);
 - a job name must match `[A-Za-z0-9_-]+`;
 - `schedule` and `command` are required;
+- `schedule` must be a valid cron expression, as described in
+  [scheduling.md](scheduling.md);
 - `command` must be an absolute path;
 - `retry` must not be negative;
 - `timeout`, when present, must be a valid, non-negative duration;
@@ -98,7 +100,6 @@ job "backup": overlap "sometimes" is not one of skip, allow, queue
 
 ## Currently deferred
 
-The syntax of the cron expression is validated when the scheduling engine is
-implemented. Until then `cronx validate` checks only that `schedule` is present.
-The same applies to resolving `timezone` to an actual location, which happens
-when the scheduler starts rather than at validation time.
+`timezone` is stored as written and resolved to a location when the scheduler
+starts, rather than when the file is validated: a name that does not exist yet
+on the machine is only reported at that point.
