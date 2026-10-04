@@ -15,6 +15,10 @@ const (
 	helperExit   = "CRONX_TEST_EXIT"
 )
 
+// printedByTheJob is what the helper process writes to its standard output, so
+// that the tests can find it in the log file of the run.
+const printedByTheJob = "printed by the job"
+
 func TestHelperProcess(t *testing.T) {
 	if os.Getenv(helperMarker) != "1" {
 		return
@@ -22,6 +26,8 @@ func TestHelperProcess(t *testing.T) {
 	switch os.Getenv(helperMode) {
 	case "ok":
 		// Nothing to do.
+	case "print":
+		fmt.Println(printedByTheJob)
 	case "fail":
 		code, err := strconv.Atoi(os.Getenv(helperExit))
 		if err != nil {
