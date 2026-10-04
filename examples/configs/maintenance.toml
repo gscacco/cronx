@@ -1,0 +1,46 @@
+# A realistic set-up for a single server: a nightly backup, an hourly log
+# rotation, a weekly database vacuum and a report on weekday mornings.
+#
+#   cronx validate --config examples/configs/maintenance.toml
+#   cronx list     --config examples/configs/maintenance.toml
+#
+# As in full.toml, the commands are placeholders: cronx only ever runs an
+# absolute path.
+
+[scheduler]
+timezone = "Local"
+max_parallel_jobs = 2
+
+[logging]
+level = "info"
+
+[jobs.backup]
+schedule = "0 3 * * *"              # 03:00 every day
+command = "/usr/local/bin/backup"
+args = ["--incremental"]
+timeout = "2h"
+retry = 1
+overlap = "skip"
+working_directory = "/srv"
+
+[jobs.logrotate]
+schedule = "5 * * * *"              # five minutes past every hour
+command = "/usr/sbin/logrotate"
+args = ["/etc/logrotate.conf"]
+timeout = "5m"
+overlap = "skip"
+
+[jobs.vacuum]
+schedule = "0 4 * * 0"              # 04:00 on Sundays
+command = "/usr/bin/vacuumdb"
+args = ["--all", "--analyze"]
+timeout = "1h"
+retry = 1
+env = { PGDATABASE = "app" }
+
+[jobs.report]
+schedule = "0 7 * * 1-5"            # 07:00 from Monday to Friday
+command = "/opt/reports/daily-report"
+timeout = "30m"
+overlap = "queue"
+env = { REPORT_FORMAT = "pdf" }
