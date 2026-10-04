@@ -49,12 +49,27 @@ make lint    # go vet + formatting check
 make ci      # what continuous integration runs
 ```
 
+## Usage
+
+Validate a configuration file (the path is resolved from `--config`, then
+`CRONX_CONFIG`, then `~/.cronx/config.toml`):
+
+```sh
+cronx validate
+cronx validate --config ./config.toml
+```
+
+The configuration format is documented in
+[docs/configuration.md](docs/configuration.md).
+
 ## Repository layout
 
 ```
-cmd/cronx/       command-line entry point
-internal/        implementation packages (not importable by other modules)
-docs/            design and reference documentation
+cmd/cronx/          command-line entry point
+internal/config/    configuration loading and validation
+internal/job/       job domain model
+internal/cli/       command-line commands
+docs/               design and reference documentation
 ```
 
 ## License
