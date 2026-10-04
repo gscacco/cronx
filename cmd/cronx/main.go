@@ -1,12 +1,19 @@
 // Command cronx is the entry point of the cronx job scheduler.
-//
-// The command-line interface is introduced together with the configuration
-// model. For now this entry point only verifies that the project builds and
-// that the development tooling works end to end.
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+
+	"gscacco.com/cronx/internal/cli"
+)
+
+// exitFailure is the exit status used when the command fails.
+const exitFailure = 1
 
 func main() {
-	fmt.Println("cronx: the command-line interface is not implemented yet")
+	if err := cli.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, "cronx:", err)
+		os.Exit(exitFailure)
+	}
 }
