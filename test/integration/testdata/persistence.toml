@@ -1,0 +1,7 @@
+# Configuration for a job that leaves a mark every minute, so that a test can
+# watch a scheduler run it, stop, and start again on the same state.
+
+[jobs.tick]
+schedule = "* * * * *"
+command = "@JOB_HELPER@"
+args = ["append", "@TEST_DIR@/ticks", "started\n", "out", "tick"]

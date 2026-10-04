@@ -1,0 +1,17 @@
+# Configuration for the attempts a failing job makes.
+
+# Never succeeds: one trigger becomes three attempts.
+[jobs.failing]
+schedule = "0 3 * * *"
+command = "@JOB_HELPER@"
+args = ["exit", "3"]
+retry = 2
+
+# Fails twice and then succeeds, so the attempts must stop there. The program
+# counts its own attempts in a file, which is what makes the outcome
+# predictable without cronx having to support it.
+[jobs.eventually]
+schedule = "0 4 * * *"
+command = "@JOB_HELPER@"
+args = ["fail", "@TEST_DIR@/attempts", "2", "3"]
+retry = 2
