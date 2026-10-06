@@ -1,0 +1,15 @@
+# Configuration for the working directory of a job.
+
+# The directory exists: the job must observe exactly it.
+[jobs.report]
+schedule = "0 3 * * *"
+command = "@JOB_HELPER@"
+args = ["report", "@TEST_DIR@/cwd.json"]
+working_directory = "@TEST_DIR@/requested"
+
+# The directory does not exist: the job cannot be started at all.
+[jobs.missing]
+schedule = "0 4 * * *"
+command = "@JOB_HELPER@"
+args = ["report", "@TEST_DIR@/missing.json"]
+working_directory = "@TEST_DIR@/does-not-exist"

@@ -1,0 +1,10 @@
+# Configuration for the environment of a job.
+#
+# The values are unusual on purpose, so that a test can tell the value the
+# configuration declares from anything the scheduler happened to have.
+
+[jobs.environment]
+schedule = "0 3 * * *"
+command = "@JOB_HELPER@"
+args = ["report", "@TEST_DIR@/environment.json"]
+env = { CRONX_TEST_ALPHA = "first", CRONX_TEST_BETA = "with spaces and $dollars" }

@@ -1,0 +1,7 @@
+# Configuration for a job that runs far longer than a test needs, so that the
+# scheduler can be killed while this run is still in progress.
+
+[jobs.long]
+schedule = "* * * * *"
+command = "@JOB_HELPER@"
+args = ["report", "@TEST_DIR@/long.json", "append", "@TEST_DIR@/long-started", "started\n", "sleep", "120s"]

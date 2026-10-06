@@ -1,0 +1,22 @@
+# Configuration for a job that takes longer than the minute between two
+# activations, so that the second activation arrives while the first run is
+# still in progress.
+#
+# Two jobs may run at the same time, because a trigger can only be judged by the
+# overlap policy once it is being considered: with a single slot the trigger
+# would wait for the slot of the running job instead, and would then run the job
+# rather than being skipped.
+#
+# The job appends a line when it starts, which is how a test can tell how many
+# executions really happened: a duplicated run would leave two lines behind. It
+# reports its identifier so that the test can check that stopping the scheduler
+# stopped it.
+
+[scheduler]
+max_parallel_jobs = 2
+
+[jobs.tick]
+schedule = "* * * * *"
+command = "@JOB_HELPER@"
+args = ["report", "@TEST_DIR@/tick.json", "append", "@TEST_DIR@/ticks", "started\n", "sleep", "240s"]
+overlap = "skip"

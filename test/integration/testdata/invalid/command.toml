@@ -1,0 +1,5 @@
+# A configuration that is wrong in exactly one way: the command is required and
+# is missing.
+
+[jobs.backup]
+schedule = "0 3 * * *"

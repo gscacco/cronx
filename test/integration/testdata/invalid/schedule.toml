@@ -1,0 +1,6 @@
+# A configuration that is wrong in exactly one way: the schedule has four
+# fields, where five are required.
+
+[jobs.backup]
+schedule = "0 3 * *"
+command = "/usr/local/bin/backup"

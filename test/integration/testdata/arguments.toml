@@ -1,0 +1,31 @@
+# Configuration for the arguments a job receives.
+#
+# The payload after "--" is deliberately hostile. Every notation that a shell
+# would have interpreted must reach the process as a literal argument, because
+# cronx starts the program directly and never through a shell.
+#
+# The working directory holds files, so that a glob would have something to
+# expand into if one were used.
+
+[jobs.arguments]
+schedule = "0 3 * * *"
+command = "@JOB_HELPER@"
+args = [
+  "report", "@TEST_DIR@/arguments.json",
+  "--",
+  "plain",
+  "two words",
+  "  padded  ",
+  "$(whoami)",
+  "`id`",
+  "; touch @TEST_DIR@/shell-ran",
+  "*",
+  "?",
+  "--flag=value",
+  "quote\"inside",
+  "line\nbreak",
+  "tab\tinside",
+  "back\\slash",
+  "",
+]
+working_directory = "@TEST_DIR@/glob"

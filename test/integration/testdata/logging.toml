@@ -1,0 +1,14 @@
+# Configuration for the output a job produces.
+#
+# Both streams are written by the same program, so a test can check that
+# neither of them is lost, whether the job succeeds or fails.
+
+[jobs.chatty]
+schedule = "0 3 * * *"
+command = "@JOB_HELPER@"
+args = ["out", "chatty stdout", "err", "chatty stderr"]
+
+[jobs.noisy]
+schedule = "0 4 * * *"
+command = "@JOB_HELPER@"
+args = ["out", "noisy stdout", "err", "noisy stderr", "exit", "4"]
