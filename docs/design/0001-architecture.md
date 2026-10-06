@@ -109,7 +109,7 @@ referenced from the history.
 | D9 | Continuous integration: a host-agnostic `make ci`, run through the flake |
 | D10 | Commit messages: plain descriptive messages |
 | D11 | Configuration file: `~/.cronx/config.toml`, overridable via `--config` or `CRONX_CONFIG` |
-| D12 | State and logs: `~/.cronx/state.db` and `~/.cronx/logs/` |
+| D12 | State and logs default to `~/.cronx/state.db` and `~/.cronx/logs/` (movable, see D32) |
 | D13 | `command` must be an absolute path; cronx performs no PATH lookup |
 | D14 | `args` is an array of strings passed verbatim |
 | D15 | `working_directory` is optional |
@@ -130,3 +130,4 @@ referenced from the history.
 | D30 | Scheduler log at `~/.cronx/logs/cronx.log` |
 | D31 | Commands: `run`, `validate`, `list`, `history`, `run-once`, `status`, `version` |
 | D32 | The run log and the status database can be relocated from the configuration: `[logging].path` and `[storage].path` (both optional) |
+| D33 | Versions follow Semantic Versioning: before 1.0 a new key, a new command or a visible behaviour change is a `MINOR` release and a fix on its own a `PATCH`; the schema and the command line freeze at 1.0.0 |
