@@ -3,6 +3,7 @@ package runner_test
 import (
 	"context"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -98,6 +99,31 @@ func TestRunRecordsTimestampsFromTheClock(t *testing.T) {
 	}
 	if result.Duration != 0 {
 		t.Errorf("Duration = %s, want 0 for a fixed clock", result.Duration)
+	}
+}
+
+func TestRunReportsThePidOfTheStartedProcess(t *testing.T) {
+	// SETUP
+	output := helperOutFile(t)
+	command := newHelperCommand(t, "record-pid", output)
+	var reported int
+	command.OnStart = func(pid int) { reported = pid }
+
+	// EXERCISE
+	if _, err := runner.New(clock.System{}).Run(context.Background(), command); err != nil {
+		t.Fatalf("Run() returned an unexpected error: %v", err)
+	}
+
+	// VERIFY
+	if reported <= 0 {
+		t.Fatalf("OnStart reported the pid %d, want the identifier of the started process", reported)
+	}
+	want, err := strconv.Atoi(strings.TrimSpace(readRecorded(t, output)))
+	if err != nil {
+		t.Fatalf("reading the pid the process recorded: %v", err)
+	}
+	if reported != want {
+		t.Errorf("OnStart reported the pid %d, want %d, the process that ran", reported, want)
 	}
 }
 

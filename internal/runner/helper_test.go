@@ -53,6 +53,8 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(2)
 		}
 		record(os.Getenv(helperOut), dir)
+	case "record-pid":
+		record(os.Getenv(helperOut), strconv.Itoa(os.Getpid()))
 	case "print":
 		fmt.Println("stdout-line")
 		fmt.Fprintln(os.Stderr, "stderr-line")
