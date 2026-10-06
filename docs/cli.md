@@ -17,6 +17,7 @@ live under `~/.cronx/`.
 | `history [job]` | Show the execution history, newest first. |
 | `run-once <job>` | Run a job immediately, whatever its schedule. |
 | `run` | Run the scheduler in the foreground until it is stopped. |
+| `version` | Print the version of cronx. |
 
 Every command below can be tried against the configuration files kept in
 [`examples/configs/`](../examples/configs/), which are described one by one in
@@ -103,6 +104,16 @@ and to the standard error. Interrupting it (`Ctrl-C`, `SIGINT` or `SIGTERM`)
 stops the jobs that are still running, waits for them and then exits. To keep it
 running in the background, use the usual tools of your operating system, for
 example a service manager.
+
+## version
+
+```console
+$ cronx version
+cronx 0.1.0
+```
+
+The command prints the version of cronx and nothing else, so it can be used in
+scripts. It reads no configuration and writes no state.
 
 ## Logs
 

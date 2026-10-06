@@ -128,4 +128,4 @@ history.
 | D28 | Run status: `scheduled`, `running`, `succeeded`, `failed`, `timed_out`, `spawn_error`, `skipped` |
 | D29 | Job output captured to `~/.cronx/logs/<job>/<runid>.log` |
 | D30 | Scheduler log at `~/.cronx/logs/cronx.log` |
-| D31 | Commands: `run`, `validate`, `list`, `history`, `run-once`, `status` |
+| D31 | Commands: `run`, `validate`, `list`, `history`, `run-once`, `status`, `version` |
