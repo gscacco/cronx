@@ -252,6 +252,7 @@ automatically, and only their owner can read them.
 | [Example configurations](docs/examples.md) | The files in [`examples/configs/`](examples/configs/) explained one by one. |
 | [Testing](docs/testing.md) | How to run the tests, what they verify, and what they found. |
 | [Architecture](docs/design/0001-architecture.md) | The design decisions behind the implementation. |
+| [Roadmap](docs/roadmap.md) | What is released, what each next version contains, and how a version number is chosen. |
 
 ## Quick Start
 
