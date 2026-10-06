@@ -54,7 +54,7 @@ internal/schedule/  cron expression parsing and next-time computation
 internal/clock/     injectable time source (deterministic tests)
 internal/runner/    secure process execution (never a shell)
 internal/store/     SQLite schema, migrations, history, runtime state
-internal/logx/      logging setup and per-run output capture
+internal/logx/      logging setup: the scheduler log and the shared run log
 internal/scheduler/ orchestration loop and execution policies
 internal/cli/       command-line commands
 ```
@@ -91,8 +91,8 @@ security tests guard this behaviour.
 
 SQLite stores execution history (`runs`) and runtime state (`job_state`), and a
 `schema_meta` table tracks the schema version. Timestamps are stored as UTC in
-RFC 3339 format. Job output is written to the filesystem and referenced from the
-history.
+RFC 3339 format. Job output is written to a single log file on the filesystem and
+referenced from the history.
 
 ## Approved decision register
 
@@ -126,6 +126,7 @@ history.
 | D26 | Schema: `schema_meta`, `runs`, `job_state` |
 | D27 | Timestamps: UTC RFC 3339 |
 | D28 | Run status: `scheduled`, `running`, `succeeded`, `failed`, `timed_out`, `spawn_error`, `skipped` |
-| D29 | Job output captured to `~/.cronx/logs/<job>/<runid>.log` |
+| D29 | The output of every run is written to one shared log; each line carries an RFC 3339 timestamp, the job, the run and the pid |
 | D30 | Scheduler log at `~/.cronx/logs/cronx.log` |
 | D31 | Commands: `run`, `validate`, `list`, `history`, `run-once`, `status`, `version` |
+| D32 | The run log and the status database can be relocated from the configuration: `[logging].path` and `[storage].path` (both optional) |

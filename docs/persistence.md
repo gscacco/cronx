@@ -7,12 +7,16 @@ configuration.
 
 ## Location
 
-| Data              | Where              |
-| ----------------- | ------------------ |
-| Desired config    | `~/.cronx/config.toml` |
-| Runtime state     | `~/.cronx/state.db` |
-| Execution history | `~/.cronx/state.db` |
-| Run output        | `~/.cronx/logs/`   |
+| Data              | Where                    |
+| ----------------- | ------------------------ |
+| Desired config    | `~/.cronx/config.toml`   |
+| Runtime state     | `~/.cronx/state.db`      |
+| Execution history | `~/.cronx/state.db`      |
+| Run output        | `~/.cronx/logs/runs.log` |
+
+The status database and the run log can be moved out of the home directory with
+`[storage].path` and `[logging].path`; see [configuration.md](configuration.md).
+Every run of every job appends to the same run log.
 
 The database file and its directory are created automatically when needed, with
 owner-only permissions. The connection enables the write-ahead log, a five
@@ -39,7 +43,7 @@ One row per execution.
 | `exit_code`   | integer | Exit status of the process, empty when no process ran. |
 | `duration_ms` | integer | How long the run took, in milliseconds. |
 | `error`       | text    | Why the run failed, when there is a reason. |
-| `log_path`    | text    | Where the output of the run was written. |
+| `log_path`    | text    | Where the output of the run was written: the shared run log.
 
 Runs are read newest first, which is the order `cronx history` prints them in.
 

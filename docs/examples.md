@@ -8,7 +8,7 @@ stale: the test suite reads the same files, so an example that stops being valid
 | File | What it is for |
 | ---- | -------------- |
 | [`minimal.toml`](../examples/configs/minimal.toml) | The smallest configuration cronx accepts: one job, the two required fields. |
-| [`full.toml`](../examples/configs/full.toml) | Every field of the schema, all three overlap policies and a schedule that can never match. |
+| [`full.toml`](../examples/configs/full.toml) | Every field of a job, plus the global scheduler and logging settings, all three overlap policies and a schedule that can never match. |
 | [`maintenance.toml`](../examples/configs/maintenance.toml) | A realistic set-up for a single server: backup, log rotation, vacuum, report. |
 | [`broken.toml`](../examples/configs/broken.toml) | Deliberately invalid: the reference for what the diagnostics look like. |
 
@@ -20,8 +20,8 @@ your machine before running anything.
 ## Trying an example
 
 A configuration file is only ever read: cronx never rewrites it, and the runtime
-state and the logs always stay under the home directory (`~/.cronx/`), whatever
-file `--config` selects.
+state and the logs live under the home directory (`~/.cronx/`) unless the
+configuration moves them; see [configuration.md](configuration.md).
 
 ```console
 $ cronx validate --config examples/configs/minimal.toml
@@ -68,6 +68,10 @@ max_parallel_jobs = 2               # at most two jobs running at the same time
 [logging]
 level = "debug"                     # debug | info | warn | error
 ```
+
+The optional `[logging] path` and `[storage] path`, which move the run log and
+the status database, are described in [configuration.md](configuration.md); they
+are left out of the examples so that the files read exactly as they are.
 
 and then uses every per-job field at least once:
 
