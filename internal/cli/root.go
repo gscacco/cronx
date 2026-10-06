@@ -31,6 +31,7 @@ func NewRootCommand() *cobra.Command {
 		newHistoryCommand(&configPath),
 		newRunOnceCommand(&configPath),
 		newRunCommand(&configPath),
+		newVersionCommand(),
 	)
 
 	return root
