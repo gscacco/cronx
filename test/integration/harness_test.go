@@ -112,9 +112,10 @@ func (e *environment) logsDirectory() string {
 	return e.homePath(".cronx", "logs")
 }
 
-// jobLogDirectory returns the directory that holds the output of one job.
-func (e *environment) jobLogDirectory(name string) string {
-	return filepath.Join(e.logsDirectory(), name)
+// runsLog returns the path of the log every run writes to: a single file
+// shared by all the jobs of the installation.
+func (e *environment) runsLog() string {
+	return filepath.Join(e.logsDirectory(), "runs.log")
 }
 
 // schedulerLog returns the path of the scheduler's own log file.

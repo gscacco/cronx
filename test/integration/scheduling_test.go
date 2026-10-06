@@ -2,7 +2,6 @@ package integration_test
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -61,11 +60,12 @@ func TestAScheduledJobRunsAndIsRecorded(t *testing.T) {
 			run.FinishedAt, run.StartedAt)
 	}
 
-	// The output of the run is kept in the log file the database points at.
+	// The output of the run is kept in the log file the database points at:
+	// the one file every run of the installation appends to.
 	if run.LogPath == "" {
 		t.Fatal("the run was recorded without a log file")
 	}
-	expectedLog := filepath.Join(environment.jobLogDirectory("heartbeat"), "1.log")
+	expectedLog := environment.runsLog()
 	if run.LogPath != expectedLog {
 		t.Errorf("the run logged to %q, want %q", run.LogPath, expectedLog)
 	}
