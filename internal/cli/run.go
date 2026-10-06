@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"gscacco.com/cronx/internal/config"
+	"gscacco.com/cronx/internal/logx"
 )
 
 func newRunCommand(configPath *string) *cobra.Command {
@@ -27,7 +28,7 @@ func newRunCommand(configPath *string) *cobra.Command {
 
 			// The scheduler writes to its own log file and, when someone is
 			// watching, to the standard error as well.
-			logs, err := defaultLogLayout()
+			logs, err := logx.DefaultLayout()
 			if err != nil {
 				return err
 			}
