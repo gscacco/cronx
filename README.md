@@ -209,6 +209,14 @@ cronx validate --config examples/configs/maintenance.toml
 It prints whether the file is valid or every problem it found. Nothing is
 started, and no state is written.
 
+### Checking the version
+
+```sh
+cronx version
+```
+
+It prints the version of cronx and reads no configuration.
+
 ### Logs
 
 | Path                            | Contents |
