@@ -77,6 +77,7 @@ func buildJob(name string, raw rawJob) (job.Job, []error) {
 type rawConfig struct {
 	Scheduler rawScheduler      `toml:"scheduler"`
 	Logging   rawLogging        `toml:"logging"`
+	Storage   rawStorage        `toml:"storage"`
 	Jobs      map[string]rawJob `toml:"jobs"`
 }
 
@@ -87,6 +88,11 @@ type rawScheduler struct {
 
 type rawLogging struct {
 	Level string `toml:"level"`
+	Path  string `toml:"path"`
+}
+
+type rawStorage struct {
+	Path string `toml:"path"`
 }
 
 type rawJob struct {

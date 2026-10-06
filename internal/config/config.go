@@ -27,11 +27,14 @@ const (
 	DefaultLoggingLevel    = "info"
 )
 
-// Directory and file name of the default configuration, relative to the user's
-// home directory.
+// Directory and file names, relative to the user's home directory: the default
+// configuration, the default state database and the default log.
 const (
-	configDirName  = ".cronx"
-	configFileName = "config.toml"
+	configDirName     = ".cronx"
+	configFileName    = "config.toml"
+	logsDirectoryName = "logs"
+	runsLogFileName   = "runs.log"
+	stateFileName     = "state.db"
 )
 
 // jobNamePattern bounds the characters allowed in a job name.
@@ -58,12 +61,25 @@ type Scheduler struct {
 type Logging struct {
 	// Level is one of debug, info, warn, error.
 	Level string
+	// Path is where the output of every job is written: a single file shared
+	// by all runs. Empty means the default under the home directory, resolved
+	// by LogPath.
+	Path string
+}
+
+// Storage holds where cronx keeps what it writes.
+type Storage struct {
+	// Path is the status database: the execution history and the runtime
+	// state. Empty means the default under the home directory, resolved by
+	// StatePath.
+	Path string
 }
 
 // Config is the desired configuration of the scheduler.
 type Config struct {
 	Scheduler Scheduler
 	Logging   Logging
+	Storage   Storage
 	// Jobs are the configured jobs, keyed by name.
 	Jobs map[string]job.Job
 }
@@ -89,6 +105,32 @@ func ResolvePath(flagValue string) (string, error) {
 	return DefaultPath()
 }
 
+// LogPath returns where the output of every job is written. The configured path
+// wins; otherwise the log is ~/.cronx/logs/runs.log.
+func LogPath(configured string) (string, error) {
+	if configured != "" {
+		return configured, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("determining the user home directory: %w", err)
+	}
+	return filepath.Join(home, configDirName, logsDirectoryName, runsLogFileName), nil
+}
+
+// StatePath returns where the status database lives. The configured path wins;
+// otherwise the database is ~/.cronx/state.db.
+func StatePath(configured string) (string, error) {
+	if configured != "" {
+		return configured, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("determining the user home directory: %w", err)
+	}
+	return filepath.Join(home, configDirName, stateFileName), nil
+}
+
 // Load reads, parses and validates the configuration file at path.
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
@@ -111,7 +153,8 @@ func Parse(data []byte) (*Config, error) {
 			Timezone:        DefaultTimezone,
 			MaxParallelJobs: DefaultMaxParallelJobs,
 		},
-		Logging: Logging{Level: DefaultLoggingLevel},
+		Logging: Logging{Level: DefaultLoggingLevel, Path: raw.Logging.Path},
+		Storage: Storage{Path: raw.Storage.Path},
 		Jobs:    make(map[string]job.Job, len(raw.Jobs)),
 	}
 
