@@ -1,6 +1,11 @@
-# Every field of the configuration schema, used at least once. It is a
-# reference for the syntax, not a working set-up: replace the absolute paths of
-# the commands with programs that exist on your machine.
+# Every field of a job, plus the global scheduler and logging settings, used at
+# least once. It is a reference for the syntax, not a working set-up: replace
+# the absolute paths of the commands with programs that exist on your machine.
+#
+# The optional [logging] path and [storage] path, which move the run log and the
+# status database, are left out: this file is validated and listed by the test
+# suite exactly as it is, and those paths would point outside the home
+# directory. See docs/configuration.md for how to set them.
 #
 #   cronx validate --config examples/configs/full.toml
 #   cronx list     --config examples/configs/full.toml

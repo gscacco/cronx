@@ -51,6 +51,9 @@ type Command struct {
 	// is discarded. Stdin is never connected.
 	Stdout io.Writer
 	Stderr io.Writer
+	// OnStart, when set, is called with the identifier of the process as soon
+	// as it has started, so that its output can be attributed to it.
+	OnStart func(pid int)
 }
 
 // Result describes the outcome of an execution.
@@ -107,6 +110,10 @@ func (r *Runner) Run(ctx context.Context, command Command) (Result, error) {
 
 	if startErr := process.Start(); startErr != nil {
 		return r.finish(result), fmt.Errorf("starting %s: %w", path, startErr)
+	}
+
+	if command.OnStart != nil {
+		command.OnStart(process.Process.Pid)
 	}
 
 	waitErr := r.wait(ctx, process, command, &result)

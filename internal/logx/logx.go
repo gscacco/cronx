@@ -2,15 +2,22 @@
 // captured and how the scheduler's own log is written.
 //
 // Logs are files on disk: the scheduler log records what cronx itself did, and
-// each run gets its own file holding the output of the job.
+// the output of every run of every job is written to a single log, where each
+// line is prefixed with when it was written and with the process that produced
+// it.
 package logx
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
+
+	"gscacco.com/cronx/internal/clock"
 )
 
 // Permissions used for the log tree. Logs can contain anything a job prints, so
@@ -60,24 +67,160 @@ func (l Layout) SchedulerPath() string {
 	return filepath.Join(l.root, schedulerLogName)
 }
 
-// RunPath returns the path of the log file of one run of a job.
-func (l Layout) RunPath(jobName string, runID int64) string {
-	return filepath.Join(l.root, jobName, fmt.Sprintf("%d.log", runID))
+// Log is the single file where the output of every run, of every job, is
+// written. Every line carries a readable timestamp, the job, the run and the
+// process that produced it.
+//
+// The file is created on the first write, so that a command which never runs a
+// job leaves nothing behind. Runs may write to it concurrently: each line is
+// written whole, and its bytes are never interleaved with those of another run.
+type Log struct {
+	path  string
+	clock clock.Clock
+
+	mu   sync.Mutex
+	file *os.File
 }
 
-// CreateRunFile creates the log file for a run, replacing any previous content.
-// The caller owns the returned file and must close it.
-func (l Layout) CreateRunFile(jobName string, runID int64) (*os.File, error) {
-	path := l.RunPath(jobName, runID)
-	if err := os.MkdirAll(filepath.Dir(path), dirPermissions); err != nil {
-		return nil, fmt.Errorf("creating the log directory of job %q: %w", jobName, err)
-	}
+// Open returns the log whose output is written to path, stamping every line
+// with the time read from clk. Nothing is written where the log is returned:
+// the file is created on the first write.
+func Open(path string, clk clock.Clock) *Log {
+	return &Log{path: path, clock: clk}
+}
 
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermissions)
-	if err != nil {
-		return nil, fmt.Errorf("creating the log file %s: %w", path, err)
+// Path returns the file the log is written to.
+func (l *Log) Path() string {
+	return l.path
+}
+
+// Writer returns the writer that captures the output of one run. It creates the
+// log file, and its directory, when it is called for the first time. The caller
+// must pass the identifier of the process to SetPID and call Close when the run
+// ends.
+func (l *Log) Writer(jobName string, runID int64) (*RunWriter, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if err := l.openLocked(); err != nil {
+		return nil, err
 	}
-	return file, nil
+	return &RunWriter{log: l, job: jobName, id: runID}, nil
+}
+
+// Close closes the log. It is safe to call on a log that was never written to.
+func (l *Log) Close() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.file == nil {
+		return nil
+	}
+	err := l.file.Close()
+	l.file = nil
+	return err
+}
+
+// openLocked creates the directory and the file of the log when they do not
+// exist yet. The caller holds the lock.
+func (l *Log) openLocked() error {
+	if l.file != nil {
+		return nil
+	}
+	directory := filepath.Dir(l.path)
+	if err := os.MkdirAll(directory, dirPermissions); err != nil {
+		return fmt.Errorf("creating the log directory %s: %w", directory, err)
+	}
+	file, err := os.OpenFile(l.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, filePermissions)
+	if err != nil {
+		return fmt.Errorf("opening the log %s: %w", l.path, err)
+	}
+	l.file = file
+	return nil
+}
+
+// write emits one line of a run, prefixed with what identifies it.
+func (l *Log) write(prefix, text []byte) {
+	entry := make([]byte, 0, len(prefix)+len(text)+1)
+	entry = append(entry, prefix...)
+	entry = append(entry, text...)
+	entry = append(entry, '\n')
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if err := l.openLocked(); err != nil {
+		return
+	}
+	_, _ = l.file.Write(entry)
+}
+
+// RunWriter captures the output of one run. It buffers what it receives until
+// whole lines are available, then writes each of them to the shared log with
+// the prefix that identifies the run.
+//
+// Lines written before the process identifier is known are held back, so that
+// every line carries the identifier of the process that produced it.
+type RunWriter struct {
+	log *Log
+	job string
+	id  int64
+
+	mu     sync.Mutex
+	buffer []byte
+	pid    int
+	known  bool
+}
+
+// SetPID records the identifier of the process the output comes from.
+func (w *RunWriter) SetPID(pid int) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.pid = pid
+	w.known = true
+	w.emit(false)
+}
+
+// Write buffers the output of the process. It never fails: capturing output is
+// best effort and must not stop a job.
+func (w *RunWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.buffer = append(w.buffer, p...)
+	if w.known {
+		w.emit(false)
+	}
+	return len(p), nil
+}
+
+// Close flushes whatever is left, including a last line without a newline.
+func (w *RunWriter) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.known = true
+	w.emit(true)
+	return nil
+}
+
+// emit writes every whole line in the buffer. When final is true the trailing
+// bytes, if any, are written as a line of their own. The caller holds the lock.
+func (w *RunWriter) emit(final bool) {
+	for {
+		index := bytes.IndexByte(w.buffer, '\n')
+		if index < 0 {
+			break
+		}
+		w.log.write(w.prefix(), w.buffer[:index])
+		w.buffer = w.buffer[index+1:]
+	}
+	if final && len(w.buffer) > 0 {
+		w.log.write(w.prefix(), w.buffer)
+		w.buffer = nil
+	}
+}
+
+// prefix renders what every line of a run carries: when it was written, the
+// job, the run and the process.
+func (w *RunWriter) prefix() []byte {
+	return fmt.Appendf(nil, "%s %s id=%d pid=%d ",
+		w.log.clock.Now().Format(time.RFC3339), w.job, w.id, w.pid)
 }
 
 // OpenSchedulerLog opens the scheduler's log for appending. The caller owns the

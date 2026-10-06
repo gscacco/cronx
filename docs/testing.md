@@ -48,7 +48,8 @@ being tested.
 | `timeout_test.go` | a job that outlives its timeout is stopped, the process group it started is stopped with it, and a job that refuses SIGTERM is killed after the grace period |
 | `retry_test.go` | a failing job is attempted once per configured retry, every attempt is recorded separately, and the attempts stop as soon as one succeeds |
 | `persistence_test.go` | the history and the database survive a restart, and runs left in progress by a process that was killed are closed with an explanation |
-| `logging_test.go` | both streams of a job are kept in the log file named after the run, and the log tree is readable only by its owner |
+| `logging_test.go` | both streams of a job are kept in the shared run log, every line carries a readable timestamp and identifies the run, and the log is readable only by its owner |
+| `paths_test.go` | the run log and the status database are written where `[logging].path` and `[storage].path` say, and nowhere else |
 | `configuration_test.go` | a configuration that is wrong in one way is rejected by every command, with a useful explanation and without touching the state; the configuration is found through `--config`, `CRONX_CONFIG` or the home directory |
 
 ## How the tests are put together
@@ -140,8 +141,8 @@ either side of it.
   the configuration has no such field and the runner always uses ten seconds.
   The suite checks the ten seconds, not the configurability.
 * **There is no `cronx logs` command.** [cli.md](cli.md) does not list one, so
-  the suite checks the log files directly: `~/.cronx/logs/<job>/<run id>.log`,
-  found through the run identifier that `cronx history` reports.
+  the suite checks the run log directly: `~/.cronx/logs/runs.log`, whose lines
+  carry the run identifier that `cronx history` reports.
 * **A missing working directory is explained badly.** The run is recorded as
   `spawn_error` — which is what the status table promises — but the recorded
   explanation names the command rather than the directory, because the operating

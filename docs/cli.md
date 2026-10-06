@@ -6,8 +6,9 @@ cronx <command> [flags]
 
 Every command accepts the global flag `--config`, which selects the
 configuration file. When it is not given, `CRONX_CONFIG` is used, and failing
-that the default `~/.cronx/config.toml`. The runtime state and the logs always
-live under `~/.cronx/`.
+that the default `~/.cronx/config.toml`. The runtime state and the logs live
+under `~/.cronx/` unless the configuration moves them; see
+[configuration.md](configuration.md).
 
 | Command | Purpose |
 | ------- | ------- |
@@ -89,7 +90,7 @@ job "backup" finished with status "succeeded"
 ```
 
 The run is recorded in the history exactly as a scheduled run would be, and its
-output goes to the usual log file. The overlap, retry and timeout policies of
+output goes to the run log. The overlap, retry and timeout policies of
 the job still apply: a `run-once` that arrives while the job is already running
 is skipped when the overlap policy is `skip`.
 
@@ -120,7 +121,18 @@ scripts. It reads no configuration and writes no state.
 | File | Contents |
 | ---- | -------- |
 | `~/.cronx/logs/cronx.log` | What the scheduler itself did. |
-| `~/.cronx/logs/<job>/<run id>.log` | Everything the job wrote to its standard output and standard error. |
+| `~/.cronx/logs/runs.log` | The output of every run of every job, in one file. |
 
-Logs are appended to and are never rotated automatically; the files are only
-readable by their owner.
+Every line of the run log begins with the instant it was written, the job, the
+run identifier and the pid of the process, so that the output of concurrent jobs
+can be told apart:
+
+```console
+2026-10-06T03:00:00Z backup id=12 pid=4182 starting the backup
+2026-10-06T03:00:01Z backup id=12 pid=4182 done
+```
+
+Both files are appended to and are never rotated automatically, and only their
+owner can read them. Their location can be moved with `[logging] path` (the run
+log) and `[storage] path` (the status database): see
+[configuration.md](configuration.md).

@@ -40,8 +40,9 @@ Implemented in 0.1.0:
 - **Execution history.** One row per attempt in a local SQLite database, with its
   status, start time, duration, exit code and log path, readable through
   `cronx history` and `cronx status`.
-- **Logs.** One file per run holding the output of the job, plus the scheduler's
-  own log file; both readable only by their owner.
+- **Logs.** Every run appends to one run log, whose lines carry the time, the
+  job, the run and the pid, plus the scheduler's own log file; both readable
+  only by their owner.
 - **Restart behaviour.** Runs left in progress by a process that died are closed
   on the next start, and activations missed while cronx was not running are not
   replayed.
@@ -143,7 +144,8 @@ cronx reads one TOML file. Its path is resolved in this order:
 3. `~/.cronx/config.toml` (the default).
 
 The file is only ever read: cronx never rewrites it. The runtime state and the
-logs always live under `~/.cronx/`, whichever file is in use.
+logs live under `~/.cronx/` unless the file moves them with `[logging].path` and
+`[storage].path`.
 
 ```toml
 [scheduler]
@@ -151,6 +153,10 @@ max_parallel_jobs = 2
 
 [logging]
 level = "info"
+path = "/var/log/cronx/runs.log"  # optional: where every job's output is written
+
+[storage]
+path = "/var/lib/cronx/state.db"  # optional: the status database
 
 [jobs.backup]
 schedule = "0 3 * * *"            # five-field cron expression
@@ -195,9 +201,9 @@ cronx history backup --limit 5 # only one job, fewer rows
 cronx run-once backup
 ```
 
-The run is recorded in the history and its output goes to the usual log file,
-exactly as for a scheduled run, and the policies of the job still apply. The
-command exits with status 1 when the job did not succeed.
+The run is recorded in the history and its output goes to the run log, exactly
+as for a scheduled run, and the policies of the job still apply. The command
+exits with status 1 when the job did not succeed.
 
 ### Validating a configuration
 
@@ -219,15 +225,17 @@ It prints the version of cronx and reads no configuration.
 
 ### Logs
 
-| Path                            | Contents |
-| ------------------------------- | -------- |
-| `~/.cronx/logs/cronx.log`       | What the scheduler itself did (written by `cronx run`). |
-| `~/.cronx/logs/<job>/<id>.log`  | Everything one run wrote to its standard output and standard error; `<id>` is the `ID` column of `cronx history`. |
-| `~/.cronx/state.db`             | The history and the runtime state, as SQLite. |
+| Path                       | Contents |
+| -------------------------- | -------- |
+| `~/.cronx/logs/cronx.log`  | What the scheduler itself did (written by `cronx run`). |
+| `~/.cronx/logs/runs.log`   | The output of every run of every job, one file, each line stamped with the time, the job, the run id and the pid. |
+| `~/.cronx/state.db`        | The history and the runtime state, as SQLite. |
 
-There is no `cronx logs` command: read the files directly, with `tail -f`,
-`cat`, or `sqlite3 ~/.cronx/state.db`. The scheduler log is appended to, no log
-is ever rotated automatically, and only their owner can read them.
+The run log and the status database can be moved with `[logging].path` and
+`[storage].path`; see [Configuration](docs/configuration.md). There is no
+`cronx logs` command: read the files directly, with `tail -f`, `cat`, or
+`sqlite3 ~/.cronx/state.db`. The logs are appended to, no log is ever rotated
+automatically, and only their owner can read them.
 
 > Every command, its output and its exit status are described in
 > [Command line](docs/cli.md).
@@ -308,8 +316,8 @@ $ ./bin/cronx history
 ID  JOB    ATTEMPT  STATUS     STARTED                   DURATION  EXIT
 1   hello  1        succeeded  2026-10-04 22:19:11 CEST  2ms       0
 
-$ cat ~/.cronx/logs/hello/1.log
-hello from cronx
+$ cat ~/.cronx/logs/runs.log
+2026-10-04T22:19:11Z hello id=1 pid=4213 hello from cronx
 ```
 
 Press `Ctrl-C` in the terminal of `cronx run` to stop the scheduler.

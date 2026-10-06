@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"gscacco.com/cronx/internal/job"
@@ -82,12 +83,21 @@ func (s *Scheduler) runAttempt(ctx context.Context, definition job.Job, number i
 		return job.StatusFailed
 	}
 
-	logPath := s.logs.RunPath(name, id)
-	logFile, logErr := s.logs.CreateRunFile(name, id)
+	// Every run appends to the same log. The writer is opened before the
+	// process starts, so that the run is recorded even when it prints
+	// nothing; a failure to open it is reported but does not stop the run.
+	logPath := s.logs.Path()
+	var (
+		output  io.Writer
+		onStart func(pid int)
+	)
+	writer, logErr := s.logs.Writer(name, id)
 	if logErr != nil {
-		s.logger.Error("creating the log file of a run failed", "job", name, "error", logErr)
+		s.logger.Error("opening the log of a run failed", "job", name, "error", logErr)
 	} else {
-		defer func() { _ = logFile.Close() }()
+		output = writer
+		onStart = writer.SetPID
+		defer func() { _ = writer.Close() }()
 	}
 
 	result, runErr := s.runner.Run(ctx, runner.Command{
@@ -96,8 +106,9 @@ func (s *Scheduler) runAttempt(ctx context.Context, definition job.Job, number i
 		Dir:     definition.WorkingDirectory,
 		Env:     definition.Env,
 		Timeout: definition.Timeout,
-		Stdout:  logFile,
-		Stderr:  logFile,
+		Stdout:  output,
+		Stderr:  output,
+		OnStart: onStart,
 	})
 
 	status := statusFor(result, runErr)

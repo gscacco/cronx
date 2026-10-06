@@ -1,0 +1,15 @@
+# The path of the run log and of the status database are optional. When they
+# are set, cronx writes there instead of under the home directory; here they
+# point into the scratch directory of the test, which stands for any location
+# the person running cronx chooses.
+
+[logging]
+path = "@TEST_DIR@/custom/runs.log"
+
+[storage]
+path = "@TEST_DIR@/custom/state.db"
+
+[jobs.chatty]
+schedule = "0 3 * * *"
+command = "@JOB_HELPER@"
+args = ["out", "chatty stdout"]

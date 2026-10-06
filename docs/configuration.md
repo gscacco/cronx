@@ -31,6 +31,10 @@ max_parallel_jobs = 2             # at least 1 (default: 1)
 
 [logging]
 level = "info"                    # debug | info | warn | error (default: "info")
+path  = "/var/log/cronx/runs.log" # where every job's output is written (default: ~/.cronx/logs/runs.log)
+
+[storage]
+path = "/var/lib/cronx/state.db"  # the status database (default: ~/.cronx/state.db)
 
 [jobs.backup]
 schedule = "0 3 * * *"            # required
@@ -57,6 +61,18 @@ env = { TIER = "gold" }
 | Field   | Type   | Default  | Notes |
 | ------- | ------ | -------- | ----- |
 | `level` | string | `"info"` | One of `debug`, `info`, `warn`, `error`. |
+| `path`  | string | `~/.cronx/logs/runs.log` | Where the output of every job is written: a single file, shared by all runs. Optional. |
+
+### `[storage]`
+
+| Field  | Type   | Default | Notes |
+| ------ | ------ | ------- | ----- |
+| `path` | string | `~/.cronx/state.db` | The status database: the execution history and the runtime state. Optional. |
+
+Both `logging.path` and `storage.path` are optional. When they are absent the
+paths above are used; when they are set, cronx writes there instead. A path is
+used exactly as written (no `~` expansion), and the directories it needs are
+created when cronx first writes to it.
 
 ### `[jobs.<name>]`
 
@@ -89,7 +105,8 @@ The following rules are enforced:
 - `timeout`, when present, must be a valid, non-negative duration;
 - `overlap` must be one of `skip`, `allow`, `queue`;
 - `max_parallel_jobs` must be at least 1;
-- `logging.level` must be one of `debug`, `info`, `warn`, `error`.
+- `logging.level` must be one of `debug`, `info`, `warn`, `error`;
+- `logging.path` and `storage.path`, when present, are taken as written.
 
 Example of explicit failure, using the deliberately invalid
 [`examples/configs/broken.toml`](../examples/configs/broken.toml):
