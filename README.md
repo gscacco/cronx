@@ -3,23 +3,26 @@
 cronx is a small, local job scheduler for Unix-like systems, written in Go and
 inspired by Unix `cron`. It reads a single TOML file describing the jobs to run,
 starts each of them on its own cron schedule, and records what happened: every
-run is written to a local SQLite database and its output to a log file. It is one
-binary that runs in the foreground, with no daemon manager, no database server
-and no network service.
+run is written to a local SQLite database and its output to one shared log file.
+It is one binary that runs in the foreground, with no daemon manager, no database
+server and no network service.
 
 ## Status
 
-**Version: 0.1.0**
+**Released version: 0.1.0**, with the changes planned for **0.2.0** already on
+`master`.
 
 This is an early release. Version 0.1.0 covers the core of a scheduler and is
 usable for small, personal or single-machine set-ups: schedules, direct
 shell-free execution, retries, timeouts, overlap policies, execution history and
-logs. The behaviour is not frozen yet, so details may still change between
-releases.
+logs. `master` already carries the two changes planned for 0.2.0 — one shared run
+log and the two paths you can move — but they are not part of a release yet; see
+the [roadmap](docs/roadmap.md). The behaviour is not frozen yet, so details may
+still change between releases.
 
 ## Features
 
-Implemented in 0.1.0:
+Implemented:
 
 - **Cron-style schedules.** Five-field expressions with ranges, lists, steps and
   month or day-of-week names, for example `0 9-17 * * mon-fri`.
@@ -30,7 +33,8 @@ Implemented in 0.1.0:
 - **Per-job execution policy.** `args`, `working_directory`, `env`, `timeout`,
   `retry` and `overlap` (`skip`, `allow` or `queue`).
 - **Retries.** `retry = N` allows up to `N` further attempts, and every attempt is
-  recorded separately with its own log file.
+  recorded separately in the history. The output of all of them goes to the one
+  run log, each line stamped with its attempt's run id.
 - **Timeouts.** A job that exceeds its `timeout` is stopped together with the
   processes it started, first with `SIGTERM` and then with `SIGKILL`.
 - **Overlap policies.** A trigger that arrives while the job is still running is
@@ -38,19 +42,19 @@ Implemented in 0.1.0:
 - **Parallelism limit.** `max_parallel_jobs` bounds how many jobs run at the same
   time.
 - **Execution history.** One row per attempt in a local SQLite database, with its
-  status, start time, duration, exit code and log path, readable through
-  `cronx history` and `cronx status`.
+  status, start time, duration, exit code and the log it wrote to, readable
+  through `cronx history` and `cronx status`.
 - **Logs.** Every run appends to one run log, whose lines carry the time, the
   job, the run and the pid, plus the scheduler's own log file; both readable
   only by their owner.
 - **Restart behaviour.** Runs left in progress by a process that died are closed
   on the next start, and activations missed while cronx was not running are not
   replayed.
-- **Command line.** `validate`, `list`, `status`, `history`, `run-once` and `run`,
-  with a `--config` flag; `run-once` exits non-zero when the job fails, so it can
-  be used from scripts.
+- **Command line.** `validate`, `list`, `status`, `history`, `run-once`, `run` and
+  `version`, with a `--config` flag; `run-once` exits non-zero when the job fails,
+  so it can be used from scripts.
 
-Not implemented in 0.1.0:
+Not implemented yet:
 
 - **Job dependencies** are not supported.
 - **`[scheduler].timezone`** is accepted and kept, but activation times are
@@ -253,6 +257,7 @@ automatically, and only their owner can read them.
 | [Testing](docs/testing.md) | How to run the tests, what they verify, and what they found. |
 | [Architecture](docs/design/0001-architecture.md) | The design decisions behind the implementation. |
 | [Roadmap](docs/roadmap.md) | What is released, what each next version contains, and how a version number is chosen. |
+| [Changelog](CHANGELOG.md) | What changed in each release, and what is on `master` but not released yet. |
 
 ## Quick Start
 
@@ -325,7 +330,7 @@ Press `Ctrl-C` in the terminal of `cronx run` to stop the scheduler.
 
 ## Security
 
-What version 0.1.0 does:
+What cronx does:
 
 - **Commands are executed directly.** A job is started through the process API of
   the operating system, never through a shell.
