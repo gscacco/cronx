@@ -2,7 +2,7 @@
 //
 // The scheduler is the only component that turns the desired configuration into
 // executions. It records everything it does in the store and captures the
-// output of every run in the log tree.
+// output of every run in the shared log.
 package scheduler
 
 import (
@@ -28,8 +28,8 @@ type Options struct {
 	Config config.Config
 	// Store persists the execution history and the runtime state.
 	Store *store.Store
-	// Logs is where the output of every run is written.
-	Logs logx.Layout
+	// Logs receives the output of every run: a single file shared by all jobs.
+	Logs *logx.Log
 	// Runner executes the jobs.
 	Runner *runner.Runner
 	// Clock is the source of the current time.
@@ -50,7 +50,7 @@ type Activation struct {
 type Scheduler struct {
 	config    config.Config
 	store     *store.Store
-	logs      logx.Layout
+	logs      *logx.Log
 	runner    *runner.Runner
 	clock     clock.Clock
 	logger    *slog.Logger
@@ -68,6 +68,8 @@ func New(options Options) (*Scheduler, error) {
 	switch {
 	case options.Store == nil:
 		return nil, errors.New("a store is required")
+	case options.Logs == nil:
+		return nil, errors.New("a run log is required")
 	case options.Runner == nil:
 		return nil, errors.New("a runner is required")
 	case options.Clock == nil:
