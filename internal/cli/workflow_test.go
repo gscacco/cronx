@@ -102,11 +102,7 @@ func TestWorkflowRunsAJobDescribedByAConfigurationFile(t *testing.T) {
 	// variables the configuration declared and nothing else: the environment of
 	// a job is the minimal one plus its own, so nothing of the environment of
 	// the scheduler can leak into it.
-	logs := runLogFiles(t, home, "report")
-	if len(logs) != 1 {
-		t.Fatalf("the run produced %d log files, want 1: %v", len(logs), logs)
-	}
-	log := readFile(t, logs[0])
+	log := readFile(t, runLogPath(home))
 	wants := []string{
 		"cwd=" + physicalPath(t, filepath.Join(home, "work")),
 		"message=hello from the fixture",

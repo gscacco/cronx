@@ -11,19 +11,10 @@ import (
 	"gscacco.com/cronx/internal/cli"
 )
 
-// runLogFiles returns the log files of a job, which are named after the run.
-func runLogFiles(t *testing.T, home, jobName string) []string {
-	t.Helper()
-	directory := filepath.Join(home, ".cronx", "logs", jobName)
-	entries, err := os.ReadDir(directory)
-	if err != nil {
-		t.Fatalf("reading the log directory of %q: %v", jobName, err)
-	}
-	paths := make([]string, 0, len(entries))
-	for _, entry := range entries {
-		paths = append(paths, filepath.Join(directory, entry.Name()))
-	}
-	return paths
+// runLogPath returns the path of the log every run writes to: a single file
+// shared by all the jobs of the installation.
+func runLogPath(home string) string {
+	return filepath.Join(home, ".cronx", "logs", "runs.log")
 }
 
 func TestRunOnceWritesTheJobOutputToTheRunLog(t *testing.T) {
@@ -37,11 +28,7 @@ func TestRunOnceWritesTheJobOutputToTheRunLog(t *testing.T) {
 	}
 
 	// VERIFY
-	logs := runLogFiles(t, home, "hello")
-	if len(logs) != 1 {
-		t.Fatalf("the run produced %d log files, want 1: %v", len(logs), logs)
-	}
-	content, err := os.ReadFile(logs[0])
+	content, err := os.ReadFile(runLogPath(home))
 	if err != nil {
 		t.Fatalf("reading the log of the run: %v", err)
 	}
