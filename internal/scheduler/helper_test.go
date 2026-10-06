@@ -115,15 +115,15 @@ func helperJob(t *testing.T, name, mode string) job.Job {
 // everyMinute is the schedule used by tests that never depend on the clock.
 const everyMinute = "* * * * *"
 
-// buildScheduler wires a scheduler around an in-memory store and a temporary
-// log directory.
-func buildScheduler(t *testing.T, jobs ...job.Job) (*scheduler.Scheduler, *store.Store, logx.Layout) {
+// buildScheduler wires a scheduler around an in-memory store and a shared run
+// log in a temporary directory.
+func buildScheduler(t *testing.T, jobs ...job.Job) (*scheduler.Scheduler, *store.Store, *logx.Log) {
 	t.Helper()
 	return buildSchedulerWithClock(t, clock.System{}, jobs...)
 }
 
 // buildSchedulerWithClock is buildScheduler with an explicit clock.
-func buildSchedulerWithClock(t *testing.T, clk clock.Clock, jobs ...job.Job) (*scheduler.Scheduler, *store.Store, logx.Layout) {
+func buildSchedulerWithClock(t *testing.T, clk clock.Clock, jobs ...job.Job) (*scheduler.Scheduler, *store.Store, *logx.Log) {
 	t.Helper()
 
 	persistent, err := store.OpenMemory()
@@ -132,7 +132,9 @@ func buildSchedulerWithClock(t *testing.T, clk clock.Clock, jobs ...job.Job) (*s
 	}
 	t.Cleanup(func() { _ = persistent.Close() })
 
-	layout := logx.NewLayout(filepath.Join(t.TempDir(), "logs"))
+	runs := logx.Open(filepath.Join(t.TempDir(), "logs", "runs.log"), clk)
+	t.Cleanup(func() { _ = runs.Close() })
+
 	logger, err := logx.NewLogger(io.Discard, "error")
 	if err != nil {
 		t.Fatalf("building the logger: %v", err)
@@ -150,7 +152,7 @@ func buildSchedulerWithClock(t *testing.T, clk clock.Clock, jobs ...job.Job) (*s
 			Jobs:      configured,
 		},
 		Store:  persistent,
-		Logs:   layout,
+		Logs:   runs,
 		Runner: runner.New(clk),
 		Clock:  clk,
 		Logger: logger,
@@ -158,7 +160,7 @@ func buildSchedulerWithClock(t *testing.T, clk clock.Clock, jobs ...job.Job) (*s
 	if err != nil {
 		t.Fatalf("building the scheduler: %v", err)
 	}
-	return built, persistent, layout
+	return built, persistent, runs
 }
 
 // waitFor polls condition until it holds or the deadline passes.

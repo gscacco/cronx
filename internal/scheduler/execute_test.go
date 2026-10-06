@@ -3,6 +3,7 @@ package scheduler_test
 import (
 	"context"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -13,7 +14,7 @@ import (
 func TestExecuteRunsAJobAndRecordsSuccess(t *testing.T) {
 	// SETUP
 	definition := helperJob(t, "backup", "ok")
-	subject, persistent, layout := buildScheduler(t, definition)
+	subject, persistent, runLog := buildScheduler(t, definition)
 	trigger := time.Date(2026, 1, 1, 3, 0, 0, 0, time.UTC)
 
 	// EXERCISE
@@ -44,15 +45,15 @@ func TestExecuteRunsAJobAndRecordsSuccess(t *testing.T) {
 	if recorded.ExitCode == nil || *recorded.ExitCode != 0 {
 		t.Errorf("recorded exit code = %v, want 0", recorded.ExitCode)
 	}
-	if want := layout.RunPath("backup", recorded.ID); recorded.LogPath != want {
-		t.Errorf("recorded log path = %q, want %q", recorded.LogPath, want)
+	if want := runLog.Path(); recorded.LogPath != want {
+		t.Errorf("recorded log path = %q, want the shared run log %q", recorded.LogPath, want)
 	}
 }
 
 func TestExecuteCapturesTheJobOutput(t *testing.T) {
 	// SETUP
 	definition := helperJob(t, "backup", "print")
-	subject, persistent, layout := buildScheduler(t, definition)
+	subject, persistent, runLog := buildScheduler(t, definition)
 	ctx := context.Background()
 
 	// EXERCISE
@@ -61,13 +62,17 @@ func TestExecuteCapturesTheJobOutput(t *testing.T) {
 	}
 
 	// VERIFY
-	runs, err := persistent.Runs(ctx, "backup", 1)
+	recorded, err := persistent.Runs(ctx, "backup", 1)
 	if err != nil {
 		t.Fatalf("Runs() returned an unexpected error: %v", err)
 	}
-	content, err := os.ReadFile(layout.RunPath("backup", runs[0].ID))
+	content, err := os.ReadFile(runLog.Path())
 	if err != nil {
-		t.Fatalf("reading the run log: %v", err)
+		t.Fatalf("reading the shared run log: %v", err)
+	}
+	prefix := "backup id=" + strconv.FormatInt(recorded[0].ID, 10) + " pid="
+	if !strings.Contains(string(content), prefix) {
+		t.Errorf("run log = %q, want every line to identify the run with %q", string(content), prefix)
 	}
 	if !strings.Contains(string(content), "job output") {
 		t.Errorf("run log = %q, want it to contain the output of the job", string(content))
