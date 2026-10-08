@@ -82,6 +82,12 @@ recorded in `schema_meta`. If the stored version is newer than the version the
 running binary understands, cronx refuses to open the database rather than risk
 corrupting it.
 
+The transaction begins immediately and the stored version is checked again
+inside it. Two processes that open a brand new database at the same moment
+therefore take turns: the first migrates it, and the second finds the migration
+already applied and does nothing, instead of failing because the tables it is
+about to create already exist.
+
 ## Restart behaviour
 
 Runs that were still in progress when the scheduler stopped cannot be observed

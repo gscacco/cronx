@@ -21,6 +21,12 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 - `[logging].path`, to choose where the run log is written.
 - `[storage].path`, to choose where the status database is written.
 
+### Fixed
+
+- Two cronx processes that open a brand new state database at the same moment no
+  longer race: the migration is applied once, and the second process finds it
+  done instead of failing with `table schema_meta already exists`.
+
 ## [0.1.0] - 2026-10-04
 
 ### Added

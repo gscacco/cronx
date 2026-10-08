@@ -76,10 +76,13 @@ func (s *Store) Close() error {
 
 // dataSourceName builds the connection string for a database file. The pragmas
 // make concurrent access wait rather than fail, keep the write-ahead log on and
-// enforce foreign keys.
+// enforce foreign keys. Transactions begin immediately, so that two processes
+// migrating a brand new database take turns instead of both deciding to apply
+// the same migration.
 func dataSourceName(path string) string {
 	return "file:" + path +
-		"?_pragma=busy_timeout(5000)" +
+		"?_txlock=immediate" +
+		"&_pragma=busy_timeout(5000)" +
 		"&_pragma=journal_mode(WAL)" +
 		"&_pragma=foreign_keys(1)"
 }
