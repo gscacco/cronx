@@ -35,6 +35,9 @@ Implemented:
 
 - **Cron-style schedules.** Five-field expressions with ranges, lists, steps and
   month or day-of-week names, for example `0 9-17 * * mon-fri`.
+- **The zone you schedule in.** `[scheduler].timezone` chooses the clock
+  activation times are computed on: an IANA name such as `Europe/Rome`, or
+  `Local` for the zone of the machine.
 - **One configuration file.** Every job is described in the same TOML file, which
   is validated before anything runs and whose problems are all reported at once.
 - **No shell.** A job is started directly as an executable plus a list of
@@ -66,8 +69,6 @@ Implemented:
 Not implemented yet:
 
 - **Job dependencies** are not supported.
-- **`[scheduler].timezone`** is accepted and kept, but activation times are
-  computed in the local timezone of the machine running cronx.
 - **The grace period** between `SIGTERM` and `SIGKILL` is fixed at ten seconds; it
   cannot be set from the configuration file.
 - **There is no lock on the state.** Start one scheduler per home directory;
@@ -76,7 +77,7 @@ Not implemented yet:
   time (`max_parallel_jobs` of at least 2). With the default of 1, a trigger that
   arrives while the job is still running waits for a free slot and then runs.
 
-The last four items are behaviours the test suite found, with the evidence, in
+The last three items are behaviours the test suite found, with the evidence, in
 [docs/testing.md](docs/testing.md).
 
 ## Build

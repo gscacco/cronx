@@ -8,6 +8,20 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 
 ## [Unreleased]
 
+### Added
+
+- `[scheduler].timezone` is applied: activation times are computed on the clock
+  of the configured zone, so a job runs at the wall clock time of that zone
+  rather than of the machine, and `cronx list` prints the next run there. The
+  zone database is embedded in the binary, so an IANA name resolves even where
+  the system carries no `/usr/share/zoneinfo`.
+
+### Fixed
+
+- A `timezone` that names no zone is no longer ignored: it is reported, with the
+  name, while the configuration is read, so `validate` and every other command
+  refuse the file instead of scheduling jobs in an unexpected zone.
+
 ## [0.2.0] - 2026-10-08
 
 ### Changed

@@ -56,6 +56,12 @@ env = { TIER = "gold" }
 | `timezone`          | string  | `"Local"` | IANA timezone name or `Local`. |
 | `max_parallel_jobs` | integer | `1`       | Maximum number of jobs running at the same time; must be at least 1. |
 
+`timezone` is the clock every activation is computed on: with
+`timezone = "Europe/Rome"` a job whose schedule says `30 2 * * *` runs at 02:30
+in Rome, whatever the zone of the machine. `Local`, the default, means the zone
+of the machine. The zone database travels with the binary, so a name resolves
+even where the system carries no `/usr/share/zoneinfo`.
+
 ### `[logging]`
 
 | Field   | Type   | Default  | Notes |
@@ -109,6 +115,7 @@ The following rules are enforced:
 - `timeout`, when present, must be a valid, non-negative duration;
 - `overlap` must be one of `skip`, `allow`, `queue`;
 - `max_parallel_jobs` must be at least 1;
+- `timezone` must be `Local` or a name the zone database knows;
 - `logging.level` must be one of `debug`, `info`, `warn`, `error`;
 - `logging.path` and `storage.path`, when present, are taken as written.
 
@@ -133,9 +140,3 @@ The whole output, and the mistake behind each line, is listed in
   never runs it through a shell.
 - `args` are passed to the executable as individual, literal arguments. Shell
   metacharacters such as `;`, `|`, `$` or `*` have no special meaning.
-
-## Currently deferred
-
-`timezone` is stored as written and resolved to a location when the scheduler
-starts, rather than when the file is validated: a name that does not exist yet
-on the machine is only reported at that point.

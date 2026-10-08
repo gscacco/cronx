@@ -47,9 +47,18 @@ When only one of the two is restricted, only that one applies.
 
 ## Timezone
 
-Activation times are computed in the timezone of the reference instant. In
-practice that is the timezone configured in `[scheduler].timezone`, which
-defaults to `Local`.
+Activation times are computed on the clock of the zone configured in
+`[scheduler].timezone`, which defaults to `Local`, the zone of the machine. The
+expression is read as a wall clock in that zone: with
+`timezone = "Europe/Rome"`, `0 3 * * *` runs at 03:00 in Rome whatever zone the
+machine runs in. `cronx list` prints the next activation in the same zone.
+
+Two rules cover the nights a clock moves:
+
+- an activation that a forward transition removes does not exist, so it is
+  skipped: on the night the clock jumps from 02:00 to 03:00, a job at
+  `30 2 * * *` does not run at all;
+- an activation that a backward transition repeats fires once, not twice.
 
 ## Missed runs
 

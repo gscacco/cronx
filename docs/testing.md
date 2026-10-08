@@ -50,6 +50,7 @@ being tested.
 | `persistence_test.go` | the history and the database survive a restart, and runs left in progress by a process that was killed are closed with an explanation |
 | `logging_test.go` | both streams of a job are kept in the shared run log, every line carries a readable timestamp and identifies the run, and the log is readable only by its owner |
 | `paths_test.go` | the run log and the status database are written where `[logging].path` and `[storage].path` say, and nowhere else |
+| `timezone_test.go` | the next run is computed on the clock of `[scheduler].timezone`, not on the clock of the machine |
 | `configuration_test.go` | a configuration that is wrong in one way is rejected by every command, with a useful explanation and without touching the state; the configuration is found through `--config`, `CRONX_CONFIG` or the home directory |
 
 The race two processes can meet when they open a brand new database at the same
@@ -59,6 +60,11 @@ cancellation that no process can be asked for: `internal/store` applies a
 migration a second time and opens one database from several goroutines at once,
 and `internal/scheduler` cancels the context of a running job and checks that
 its row is finished.
+
+The nights a clock moves are checked the same way, in `internal/schedule`: the
+activation after a daylight saving transition is asked for directly, because no
+test can wait for one to arrive. What the two rules in
+[scheduling.md](scheduling.md) promise is what the test reads back.
 
 ## How the tests are put together
 
@@ -137,13 +143,6 @@ either side of it.
   twice on the same state is therefore a way to duplicate executions, and a
   deliberate decision — a lock file, or a lease in the database — is needed
   before it can be prevented.
-* **`[scheduler].timezone` is parsed but never used.** [scheduling.md](scheduling.md)
-  and [configuration.md](configuration.md) say that activations are computed in
-  the configured time zone, and the architecture notes describe the behaviour
-  wanted around daylight saving. The scheduler reads the current time from the
-  machine and never resolves the configured zone, so the key has no effect. The
-  integration tests set `TZ` instead, which is what the scheduler really uses,
-  so that they test behaviour rather than document a gap.
 * **The grace period is not configurable per job.** [security.md](security.md)
   says the grace period between SIGTERM and SIGKILL "is configurable per job";
   the configuration has no such field and the runner always uses ten seconds.

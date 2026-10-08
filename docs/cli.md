@@ -57,6 +57,10 @@ cleanup */15 * * * *  2026-10-04 21:30:00 CEST
 A job whose expression can never match, such as `0 0 31 4 *`, is shown with a
 dash in the `NEXT` column.
 
+The `NEXT` column is a wall clock in the zone of `[scheduler].timezone`: with
+`timezone = "Europe/Rome"` the times above are Rome's, whatever zone the machine
+running cronx is in.
+
 ## status
 
 ```console
