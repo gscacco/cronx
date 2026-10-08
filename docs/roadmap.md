@@ -65,7 +65,7 @@ else.
   database can live anywhere (D32).
 - [x] A [`CHANGELOG.md`](../CHANGELOG.md) and the decision register reconciled
   with D29 and D32.
-- [ ] Close the race that can make two processes migrating a brand new database
+- [x] Close the race that can make two processes migrating a brand new database
   fail with `table schema_meta already exists` ([testing.md](testing.md)).
 - [ ] Name the missing working directory, instead of reporting the command
   ([testing.md](testing.md)).

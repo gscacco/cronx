@@ -52,6 +52,11 @@ being tested.
 | `paths_test.go` | the run log and the status database are written where `[logging].path` and `[storage].path` say, and nowhere else |
 | `configuration_test.go` | a configuration that is wrong in one way is rejected by every command, with a useful explanation and without touching the state; the configuration is found through `--config`, `CRONX_CONFIG` or the home directory |
 
+The race two processes can meet when they open a brand new database at the same
+moment is covered by the package tests instead, because it needs an interleaving
+that no process can be asked for: `internal/store` applies a migration a second
+time, and opens one database from several goroutines at once.
+
 ## How the tests are put together
 
 ```
@@ -149,17 +154,6 @@ either side of it.
   system reports a failed `chdir` as a failed `fork`. The test checks the status
   and the absence of a process, not the wording, so improving the message will
   not break it.
-* **Two processes opening a brand new database at the same moment can fail.**
-  Opening the state checks the stored schema version and then applies the
-  pending migrations in a transaction. Two processes that both look at an empty
-  database can therefore both decide to migrate it, and the second one exits
-  with `applying schema version 1: SQL logic error: table schema_meta already
-  exists`. It takes a scheduler and another command started at the same instant
-  against a database that does not exist yet; the integration tests avoid it by
-  waiting until the scheduler has opened its state before they read the
-  database, and no test asserts either behaviour. Rechecking the version inside
-  the writing transaction, or creating the tables only when they are absent,
-  would remove the race.
 * **A trigger can wait for a slot instead of meeting the overlap policy.**
   `max_parallel_jobs` bounds how many jobs run at the same time, and a trigger
   that arrives when every slot is taken waits for one. The overlap policy is
