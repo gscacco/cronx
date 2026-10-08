@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -33,7 +32,7 @@ func newRunOnceCommand(configPath *string) *cobra.Command {
 			}
 			defer func() { _ = environment.close() }()
 
-			status, err := environment.scheduler.Execute(cmd.Context(), name, time.Now())
+			status, err := environment.scheduler.Execute(cmd.Context(), name, environment.clock.Now())
 			if err != nil {
 				return err
 			}

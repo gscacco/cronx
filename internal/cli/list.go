@@ -36,7 +36,7 @@ func newListCommand(configPath *string) *cobra.Command {
 				return nil
 			}
 
-			now := time.Now()
+			now := environment.clock.Now()
 			table := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
 			fmt.Fprintln(table, "JOB\tSCHEDULE\tNEXT")
 			for _, name := range names {
