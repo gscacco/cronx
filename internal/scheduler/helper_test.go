@@ -125,6 +125,13 @@ func buildScheduler(t *testing.T, jobs ...job.Job) (*scheduler.Scheduler, *store
 // buildSchedulerWithClock is buildScheduler with an explicit clock.
 func buildSchedulerWithClock(t *testing.T, clk clock.Clock, jobs ...job.Job) (*scheduler.Scheduler, *store.Store, *logx.Log) {
 	t.Helper()
+	persistent, runs := openTestState(t, clk)
+	return buildSchedulerOn(t, persistent, runs, clk, "", jobs...), persistent, runs
+}
+
+// openTestState opens a private store and the shared run log of a test.
+func openTestState(t *testing.T, clk clock.Clock) (*store.Store, *logx.Log) {
+	t.Helper()
 
 	persistent, err := store.OpenMemory()
 	if err != nil {
@@ -134,6 +141,15 @@ func buildSchedulerWithClock(t *testing.T, clk clock.Clock, jobs ...job.Job) (*s
 
 	runs := logx.Open(filepath.Join(t.TempDir(), "logs", "runs.log"), clk)
 	t.Cleanup(func() { _ = runs.Close() })
+
+	return persistent, runs
+}
+
+// buildSchedulerOn wires a scheduler around a store and a run log that already
+// exist, so that two schedulers can be asked to drive the same state. An empty
+// holder means the identity the scheduler works out for itself.
+func buildSchedulerOn(t *testing.T, persistent *store.Store, runs *logx.Log, clk clock.Clock, holder string, jobs ...job.Job) *scheduler.Scheduler {
+	t.Helper()
 
 	logger, err := logx.NewLogger(io.Discard, "error")
 	if err != nil {
@@ -156,11 +172,12 @@ func buildSchedulerWithClock(t *testing.T, clk clock.Clock, jobs ...job.Job) (*s
 		Runner: runner.New(clk),
 		Clock:  clk,
 		Logger: logger,
+		Holder: holder,
 	})
 	if err != nil {
 		t.Fatalf("building the scheduler: %v", err)
 	}
-	return built, persistent, runs
+	return built
 }
 
 // waitFor polls condition until it holds or the deadline passes.
