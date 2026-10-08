@@ -83,9 +83,9 @@ moment, or a second scheduler refuses to start — so the release is a `MINOR`.
   database refuses to start instead of duplicating executions, with a lease the
   scheduler takes, renews while it runs and gives back when it stops
   ([testing.md](testing.md), D34).
-- [ ] Make the overlap policy win over a free slot, so a trigger that arrives
+- [x] Make the overlap policy win over a free slot, so a trigger that arrives
   while a job is still running is skipped as documented even when
-  `max_parallel_jobs = 1` ([testing.md](testing.md)).
+  `max_parallel_jobs = 1` ([testing.md](testing.md), D35).
 - [x] Make the grace period between `SIGTERM` and `SIGKILL` configurable per
   job, which [security.md](security.md) already promises: `grace_period`.
 

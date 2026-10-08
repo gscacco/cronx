@@ -72,6 +72,9 @@ Everything lives under `internal/`: cronx exposes no public Go API.
 - The timezone comes from `[scheduler].timezone` (default: local). During DST
   transitions a non-existent time is skipped and an ambiguous time fires once.
 - Runs missed while the scheduler is not running are skipped (no catch-up).
+- The overlap policy of a job is applied to a trigger when it arrives, before the
+  job waits for a free slot (D35): the policy holds whatever `max_parallel_jobs`
+  is.
 
 ## Secure process execution
 
@@ -133,3 +136,4 @@ referenced from the history.
 | D32 | The run log and the status database can be relocated from the configuration: `[logging].path` and `[storage].path` (both optional) |
 | D33 | Versions follow Semantic Versioning: before 1.0 a new key, a new command or a visible behaviour change is a `MINOR` release and a fix on its own a `PATCH`; the schema and the command line freeze at 1.0.0 |
 | D34 | One scheduler per state: a lease row in the database, taken before the first activation, renewed every ten seconds and given back when the scheduler stops, so a second `cronx run` is refused; a lease of a scheduler killed outright expires after thirty seconds |
+| D35 | The overlap policy is applied to a trigger when it arrives and before the job waits for a free slot, so `skip` holds whatever `max_parallel_jobs` is, and a `queue`d run waits for the run of its own job before taking a slot |
