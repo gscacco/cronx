@@ -58,6 +58,9 @@ type Job struct {
 	Args []string
 	// Timeout bounds the execution time. Zero means no timeout.
 	Timeout time.Duration
+	// GracePeriod is how long the job is given to exit after SIGTERM before
+	// it is killed with SIGKILL. Zero means the default of the runner.
+	GracePeriod time.Duration
 	// Retry is the number of additional attempts after the first attempt fails.
 	Retry int
 	// Overlap determines the behaviour when a run is still in progress.
