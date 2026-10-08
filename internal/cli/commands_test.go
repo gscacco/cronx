@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"gscacco.com/cronx/internal/cli"
 	"gscacco.com/cronx/internal/job"
 )
 
@@ -173,7 +174,7 @@ func TestVersionPrintsTheVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("version returned an unexpected error: %v", err)
 	}
-	if !strings.Contains(output, "0.1.0") {
-		t.Errorf("version output = %q, want it to contain the version", output)
+	if want := "cronx " + cli.Version + "\n"; output != want {
+		t.Errorf("version output = %q, want %q: the release, and nothing else", output, want)
 	}
 }

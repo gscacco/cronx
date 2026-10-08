@@ -8,6 +8,8 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-08
+
 ### Changed
 
 - The output of every run now goes to one shared log, `~/.cronx/logs/runs.log`,
