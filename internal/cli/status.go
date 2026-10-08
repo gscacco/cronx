@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"text/tabwriter"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -26,28 +27,61 @@ func newStatusCommand(configPath *string) *cobra.Command {
 			}
 			defer func() { _ = environment.close() }()
 
+			out := cmd.OutOrStdout()
 			names := environment.jobNames()
 			if len(names) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "no jobs are configured")
-				return nil
+				fmt.Fprintln(out, "no jobs are configured")
+			} else {
+				table := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
+				fmt.Fprintln(table, "JOB\tLAST STATUS\tLAST RUN\tIN PROGRESS")
+				for _, name := range names {
+					status, lastRun, err := lastOutcome(cmd, environment, name)
+					if err != nil {
+						return err
+					}
+					running, err := environment.store.RunningRuns(cmd.Context(), name)
+					if err != nil {
+						return err
+					}
+					fmt.Fprintf(table, "%s\t%s\t%s\t%s\n", name, status, lastRun, yesNo(running > 0))
+				}
+				if err := table.Flush(); err != nil {
+					return err
+				}
 			}
 
-			table := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-			fmt.Fprintln(table, "JOB\tLAST STATUS\tLAST RUN\tIN PROGRESS")
-			for _, name := range names {
-				status, lastRun, err := lastOutcome(cmd, environment, name)
-				if err != nil {
-					return err
-				}
-				running, err := environment.store.RunningRuns(cmd.Context(), name)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintf(table, "%s\t%s\t%s\t%s\n", name, status, lastRun, yesNo(running > 0))
-			}
-			return table.Flush()
+			fmt.Fprintln(out)
+			return describeLease(cmd, environment)
 		},
 	}
+}
+
+// describeLease reports whether a scheduler is driving this state, which is what
+// tells a reader whether the jobs are being scheduled at all. The lease of a
+// scheduler that was killed instead of stopping is reported as what it is: a
+// state that is free, left behind by the holder named.
+func describeLease(cmd *cobra.Command, environment *environment) error {
+	held, found, err := environment.store.CurrentLease(cmd.Context())
+	if err != nil {
+		return err
+	}
+	out := cmd.OutOrStdout()
+
+	// The instants of a lease are rendered like the instants of a run: on the
+	// clock of the machine that reads them.
+	moment := func(at time.Time) string { return at.Local().Format(timestampLayout) }
+
+	switch {
+	case !found:
+		fmt.Fprintln(out, "no scheduler is running on this state")
+	case held.ExpiresAt.After(environment.clock.Now()):
+		fmt.Fprintf(out, "scheduler running since %s (%s), lease until %s\n",
+			moment(held.AcquiredAt), held.Holder, moment(held.ExpiresAt))
+	default:
+		fmt.Fprintf(out, "no scheduler is running on this state: the lease %s took %s expired at %s\n",
+			held.Holder, moment(held.AcquiredAt), moment(held.ExpiresAt))
+	}
+	return nil
 }
 
 // lastOutcome describes the most recent run of a job.
