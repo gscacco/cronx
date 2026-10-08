@@ -48,29 +48,27 @@ directly, records what happened and keeps their output.
   process that was killed closed on the next start.
 - A scheduler log and the captured output of every run under `~/.cronx/`.
 
+### 0.2.0 — 2026-10-08
+
+One shared run log and the two paths that can be moved out of `~/.cronx/`, with
+the three fixes that touch the same state and log code. The change to the log
+layout is why this is a `MINOR` release and not a patch: a reader of the old
+`logs/<job>/<id>.log` files has to look somewhere else.
+
+- One shared, timestamped run log: every run appends to one file and every line
+  carries the time, the job, the run identifier and the pid (D29).
+- `[logging].path` and `[storage].path`, so the run log and the status database
+  can live anywhere (D32).
+- A [`CHANGELOG.md`](../CHANGELOG.md) and the decision register reconciled with
+  D29 and D32.
+- The race that could make two processes migrating a brand new database fail with
+  `table schema_meta already exists` is closed: a migration is applied once.
+- A job whose working directory does not exist is explained by naming the
+  directory, instead of the command.
+- The run in flight when the scheduler stops is finished before it exits, instead
+  of being left `running` until the next start.
+
 ## Planned
-
-### 0.2.0 — one run log, and paths you can move
-
-The output of every run goes to a single file, and the two files cronx writes
-can be moved out of `~/.cronx/`. Both features are already merged and wait for
-this release; the three fixes ride along because they touch the same state and
-log code. The change to the log layout is why this is a `MINOR` release and not
-a patch: a reader of the old `logs/<job>/<id>.log` files has to look somewhere
-else.
-
-- [x] One shared, timestamped run log: every run appends to one file and every
-  line carries the time, the job, the run identifier and the pid (D29).
-- [x] `[logging].path` and `[storage].path`, so the run log and the status
-  database can live anywhere (D32).
-- [x] A [`CHANGELOG.md`](../CHANGELOG.md) and the decision register reconciled
-  with D29 and D32.
-- [x] Close the race that can make two processes migrating a brand new database
-  fail with `table schema_meta already exists` ([testing.md](testing.md)).
-- [x] Name the missing working directory, instead of reporting the command
-  ([testing.md](testing.md)).
-- [x] Finish the run that is in flight when the scheduler stops, instead of
-  leaving it `running` until the next start ([testing.md](testing.md)).
 
 ### 0.3.0 — scheduling you can rely on
 

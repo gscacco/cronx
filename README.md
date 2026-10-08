@@ -19,16 +19,15 @@ cronx runs in the foreground and requires no external infrastructure. It is inte
 
 ## Status
 
-**Released version: 0.1.0**, with the changes planned for **0.2.0** already on
-`master`.
+**Released version: 0.2.0**.
 
-This is an early release. Version 0.1.0 covers the core of a scheduler and is
+This is an early release. Version 0.2.0 covers the core of a scheduler and is
 usable for small, personal or single-machine set-ups: schedules, direct
 shell-free execution, retries, timeouts, overlap policies, execution history and
-logs. `master` already carries the two changes planned for 0.2.0 — one shared run
-log and the two paths you can move — but they are not part of a release yet; see
-the [roadmap](docs/roadmap.md). The behaviour is not frozen yet, so details may
-still change between releases.
+logs. It adds one shared run log and the two paths you can move — `[logging].path`
+and `[storage].path` — to the feature set of 0.1.0; see the
+[roadmap](docs/roadmap.md) for what comes next. The behaviour is not frozen yet,
+so details may still change between releases.
 
 ## Features
 

@@ -7,7 +7,7 @@ import (
 )
 
 // Version is the current release of cronx, reported by the "version" command.
-const Version = "0.1.0"
+const Version = "0.2.0"
 
 // newVersionCommand builds the "version" command, which prints the current
 // release of cronx.
