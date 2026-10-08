@@ -40,6 +40,27 @@ func TestSystemReportsTheCurrentTime(t *testing.T) {
 	}
 }
 
+func TestZonedReportsTheInstantInTheConfiguredLocation(t *testing.T) {
+	// SETUP: the same instant, which is one day in the zone it is read in.
+	instant := time.Date(2026, 5, 6, 22, 30, 0, 0, time.UTC)
+	location := time.FixedZone("UTC+14", 14*60*60)
+	subject := clock.Zoned{Base: clock.Fixed{T: instant}, Location: location}
+
+	// EXERCISE
+	got := subject.Now()
+
+	// VERIFY
+	if !got.Equal(instant) {
+		t.Errorf("Zoned.Now() = %s, want the instant %s", got, instant)
+	}
+	if got.Location().String() != location.String() {
+		t.Errorf("Zoned.Now() location = %s, want %s", got.Location(), location)
+	}
+	if got.Day() != 7 || got.Hour() != 12 || got.Minute() != 30 {
+		t.Errorf("Zoned.Now() = %s, want 2026-05-07 12:30:00 in %s", got, location)
+	}
+}
+
 func TestImplementationsSatisfyTheClockInterface(t *testing.T) {
 	// SETUP
 	instant := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -48,6 +69,7 @@ func TestImplementationsSatisfyTheClockInterface(t *testing.T) {
 	clocks := map[string]clock.Clock{
 		"System": clock.System{},
 		"Fixed":  clock.Fixed{T: instant},
+		"Zoned":  clock.Zoned{Base: clock.Fixed{T: instant}, Location: time.UTC},
 	}
 
 	// VERIFY
