@@ -77,7 +77,12 @@ func (s *Scheduler) runAttempt(ctx context.Context, definition job.Job, number i
 	name := definition.Name
 	startedAt := s.clock.Now()
 
-	id, err := s.store.StartRun(ctx, name, number, startedAt)
+	// The history must be final even when the scheduler is stopping, so the
+	// bookkeeping of the run outlives the cancellation. The execution itself
+	// keeps using ctx, which is what stops the job.
+	recorder := context.WithoutCancel(ctx)
+
+	id, err := s.store.StartRun(recorder, name, number, startedAt)
 	if err != nil {
 		s.logger.Error("recording the start of a run failed", "job", name, "error", err)
 		return job.StatusFailed
@@ -129,7 +134,7 @@ func (s *Scheduler) runAttempt(ctx context.Context, definition job.Job, number i
 		finish.ExitCode = &exitCode
 	}
 
-	if err := s.store.FinishRun(ctx, id, finish); err != nil {
+	if err := s.store.FinishRun(recorder, id, finish); err != nil {
 		s.logger.Error("recording the outcome of a run failed", "job", name, "run", id, "error", err)
 		return status
 	}
