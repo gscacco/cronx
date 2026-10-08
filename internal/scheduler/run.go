@@ -7,11 +7,30 @@ import (
 
 // Run schedules and runs jobs until the context is cancelled, then waits for the
 // jobs that are still running.
-func (s *Scheduler) Run(ctx context.Context) error {
+//
+// One scheduler drives a state at a time: the lease is taken before the first
+// activation is planned, kept alive while the scheduler runs and given back once
+// the jobs that were running have finished, so that a second scheduler is
+// refused instead of running the same jobs a second time.
+func (s *Scheduler) Run(ctx context.Context) (err error) {
 	runCtx, cancel := context.WithCancel(ctx)
+
+	held, err := s.takeLease(runCtx, cancel)
+	if err != nil {
+		cancel()
+		return err
+	}
+
+	// The jobs of a scheduler that is stopping are still its own: the state is
+	// given back only once they are done.
 	defer func() {
 		cancel()
 		s.running.Wait()
+		held.release()
+
+		if lost := held.failure(); lost != nil {
+			err = lost
+		}
 	}()
 
 	if err := s.begin(runCtx); err != nil {
