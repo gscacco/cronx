@@ -25,6 +25,7 @@ schedule = "0 3 * * *"              # every day at 03:00
 command = "/usr/local/bin/backup"
 args = ["--incremental", "--destination", "/srv/backup"]
 timeout = "2h"
+grace_period = "15s"                # fifteen seconds to stop before SIGKILL
 retry = 2
 overlap = "skip"
 working_directory = "/srv/backup"

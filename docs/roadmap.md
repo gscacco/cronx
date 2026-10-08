@@ -85,9 +85,8 @@ moment, or a second scheduler refuses to start — so the release is a `MINOR`.
 - [ ] Make the overlap policy win over a free slot, so a trigger that arrives
   while a job is still running is skipped as documented even when
   `max_parallel_jobs = 1` ([testing.md](testing.md)).
-- [ ] Make the grace period between `SIGTERM` and `SIGKILL` configurable per
-  job, which [security.md](security.md) already promises but the configuration
-  does not offer.
+- [x] Make the grace period between `SIGTERM` and `SIGKILL` configurable per
+  job, which [security.md](security.md) already promises: `grace_period`.
 
 ### 0.4.0 — operability: logs and data
 

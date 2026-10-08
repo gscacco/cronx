@@ -77,7 +77,7 @@ and then uses every per-job field at least once:
 
 | Job | Demonstrates |
 | --- | ------------ |
-| `backup` | `args`, `timeout`, `retry`, `overlap = "skip"`, `working_directory`, `env` |
+| `backup` | `args`, `timeout`, `grace_period`, `retry`, `overlap = "skip"`, `working_directory`, `env` |
 | `metrics` | `overlap = "allow"`: every trigger runs, even while the previous run is still going |
 | `reindex` | `overlap = "queue"`: a trigger arriving while a run is in progress waits for it |
 | `leap-check` | a valid expression that can never match, because 31 April does not exist |

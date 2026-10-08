@@ -45,7 +45,7 @@ being tested.
 | `binary_test.go` | a configuration file is walked through `validate`, `list` and `run-once`, and the run reaches the file the job writes and the row SQLite records |
 | `scheduling_test.go` | a scheduled job runs, is recorded and is reported by `history` and `status`; a trigger that arrives while the job is still running is skipped and no second execution happens |
 | `execution_test.go` | the arguments reach the process verbatim (shell metacharacters included), the working directory is the configured one, a missing one is a `spawn_error` that names the directory, and the environment of a job is exactly the documented minimal one plus its own |
-| `timeout_test.go` | a job that outlives its timeout is stopped, the process group it started is stopped with it, and a job that refuses SIGTERM is killed after the grace period |
+| `timeout_test.go` | a job that outlives its timeout is stopped, the process group it started is stopped with it, and a job that refuses SIGTERM is killed after the grace period, which is the ten second default unless the job sets one |
 | `retry_test.go` | a failing job is attempted once per configured retry, every attempt is recorded separately, and the attempts stop as soon as one succeeds |
 | `persistence_test.go` | the history and the database survive a restart, and runs left in progress by a process that was killed are closed with an explanation |
 | `logging_test.go` | both streams of a job are kept in the shared run log, every line carries a readable timestamp and identifies the run, and the log is readable only by its owner |
@@ -143,10 +143,6 @@ either side of it.
   twice on the same state is therefore a way to duplicate executions, and a
   deliberate decision — a lock file, or a lease in the database — is needed
   before it can be prevented.
-* **The grace period is not configurable per job.** [security.md](security.md)
-  says the grace period between SIGTERM and SIGKILL "is configurable per job";
-  the configuration has no such field and the runner always uses ten seconds.
-  The suite checks the ten seconds, not the configurability.
 * **There is no `cronx logs` command.** [cli.md](cli.md) does not list one, so
   the suite checks the run log directly: `~/.cronx/logs/runs.log`, whose lines
   carry the run identifier that `cronx history` reports.

@@ -32,6 +32,10 @@ var invalidConfigurations = []struct {
 		problem: `job "backup": timeout "30 minutes" is not a valid duration`,
 	},
 	{
+		fixture: "invalid/grace_period.toml",
+		problem: `job "backup": grace_period "two seconds" is not a valid duration`,
+	},
+	{
 		fixture: "invalid/overlap.toml",
 		problem: `job "backup": overlap "sometimes" is not one of skip, allow, queue`,
 	},

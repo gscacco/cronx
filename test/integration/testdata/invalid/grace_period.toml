@@ -1,0 +1,7 @@
+# A configuration that is wrong in exactly one way: the grace period is not a
+# duration.
+
+[jobs.backup]
+schedule = "0 3 * * *"
+command = "/usr/local/bin/backup"
+grace_period = "two seconds"

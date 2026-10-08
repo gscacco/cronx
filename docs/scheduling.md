@@ -108,9 +108,11 @@ being dropped.
 
 ### Stopping
 
-When the scheduler is asked to stop, jobs that are still running are stopped
-too: they receive `SIGTERM` and are killed after the grace period, and the
-scheduler waits for them before exiting.
+When a job exceeds its `timeout`, and when the scheduler is asked to stop while
+jobs are still running, the process group is asked to stop with `SIGTERM` and is
+killed with `SIGKILL` if it is still running after the grace period. The grace
+period is ten seconds unless the job sets `grace_period`. The scheduler waits for
+its jobs before it exits.
 
 ## Examples
 

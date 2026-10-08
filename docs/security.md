@@ -68,7 +68,8 @@ cronx stops the whole group:
 
 Because the whole group is signalled, the processes a job started are stopped
 together with it instead of being left behind. The grace period defaults to ten
-seconds and is configurable per job.
+seconds and is configured per job with `grace_period`
+([configuration.md](configuration.md)).
 
 ## What cronx does not do
 

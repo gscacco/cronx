@@ -43,12 +43,13 @@ Implemented:
 - **No shell.** A job is started directly as an executable plus a list of
   arguments; the path must be absolute and the arguments are passed verbatim.
 - **Per-job execution policy.** `args`, `working_directory`, `env`, `timeout`,
-  `retry` and `overlap` (`skip`, `allow` or `queue`).
+  `grace_period`, `retry` and `overlap` (`skip`, `allow` or `queue`).
 - **Retries.** `retry = N` allows up to `N` further attempts, and every attempt is
   recorded separately in the history. The output of all of them goes to the one
   run log, each line stamped with its attempt's run id.
 - **Timeouts.** A job that exceeds its `timeout` is stopped together with the
-  processes it started, first with `SIGTERM` and then with `SIGKILL`.
+  processes it started, first with `SIGTERM` and, once its `grace_period` is over
+  (ten seconds by default), with `SIGKILL`.
 - **Overlap policies.** A trigger that arrives while the job is still running is
   skipped, run anyway, or queued, according to the job's policy.
 - **Parallelism limit.** `max_parallel_jobs` bounds how many jobs run at the same
@@ -69,15 +70,13 @@ Implemented:
 Not implemented yet:
 
 - **Job dependencies** are not supported.
-- **The grace period** between `SIGTERM` and `SIGKILL` is fixed at ten seconds; it
-  cannot be set from the configuration file.
 - **There is no lock on the state.** Start one scheduler per home directory;
   two processes would both schedule the same jobs.
 - **`overlap = "skip"`** only takes effect when more than one job may run at a
   time (`max_parallel_jobs` of at least 2). With the default of 1, a trigger that
   arrives while the job is still running waits for a free slot and then runs.
 
-The last three items are behaviours the test suite found, with the evidence, in
+The last two items are behaviours the test suite found, with the evidence, in
 [docs/testing.md](docs/testing.md).
 
 ## Build
@@ -177,6 +176,7 @@ schedule = "0 3 * * *"            # five-field cron expression
 command = "/usr/local/bin/backup" # required, absolute path
 args = ["--incremental"]          # passed verbatim, never through a shell
 timeout = "30m"
+grace_period = "15s"              # time to stop after SIGTERM (default: 10s)
 retry = 1                         # one further attempt if it fails
 overlap = "skip"                  # skip | allow | queue
 working_directory = "/var/lib/backup"

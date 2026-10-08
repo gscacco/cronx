@@ -146,3 +146,49 @@ func TestAJobThatIgnoresTheRequestToStopIsKilled(t *testing.T) {
 		t.Errorf("the run was recorded as %q, want %q", run.Status, job.StatusTimedOut)
 	}
 }
+
+func TestAJobIsKilledAfterTheGracePeriodItConfigured(t *testing.T) {
+	t.Parallel()
+
+	if !processesCanBeInspected() {
+		t.Skip("this system cannot be asked whether a process is still running")
+	}
+
+	// SETUP: a job that refuses to stop, with a grace period of two seconds
+	// instead of the ten a job that does not choose one is given.
+	environment := newEnvironment(t)
+	configPath := environment.configure("timeout.toml")
+
+	// EXERCISE
+	startedAt := time.Now()
+	outcome := environment.runOnce(configPath, "brief")
+	elapsed := time.Since(startedAt)
+
+	// VERIFY
+	if outcome.code == 0 {
+		t.Fatalf("run-once succeeded, want a failure for a job that was stopped\nstdout:\n%s", outcome.stdout)
+	}
+	if !strings.Contains(outcome.stdout, string(job.StatusTimedOut)) {
+		t.Errorf("run-once printed %q, want it to report %q", outcome.stdout, job.StatusTimedOut)
+	}
+
+	// The job is asked to stop when its one second timeout expires, refuses,
+	// and is killed once the two seconds it configured are over. The default
+	// gives it ten, so a stop that lasts less than that is what shows that
+	// the grace period of the configuration is the one that was applied.
+	if elapsed < 2*time.Second {
+		t.Errorf("run-once took %s, want the grace period of the job to be given to it", elapsed)
+	}
+	if elapsed >= 9*time.Second {
+		t.Errorf("run-once took %s, want the two seconds of the configuration, not the ten second default", elapsed)
+	}
+
+	report := environment.waitForReport(environment.path("brief.json"), settleBudget)
+	t.Cleanup(func() { removeProcess(report.PID) })
+	environment.waitFor("the job to be killed", settleBudget, func() bool {
+		return !processAlive(report.PID)
+	})
+	if run := environment.latestRun("brief"); run.Status != job.StatusTimedOut {
+		t.Errorf("the run was recorded as %q, want %q", run.Status, job.StatusTimedOut)
+	}
+}

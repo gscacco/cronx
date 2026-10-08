@@ -68,6 +68,19 @@ func buildJob(name string, raw rawJob) (job.Job, []error) {
 			built.Timeout = timeout
 		}
 	}
+	if raw.GracePeriod != "" {
+		grace, err := time.ParseDuration(raw.GracePeriod)
+		switch {
+		case err != nil:
+			problems = append(problems, fmt.Errorf(
+				"job %q: grace_period %q is not a valid duration", name, raw.GracePeriod))
+		case grace <= 0:
+			problems = append(problems, fmt.Errorf(
+				"job %q: grace_period must be greater than 0, got %s", name, raw.GracePeriod))
+		default:
+			built.GracePeriod = grace
+		}
+	}
 
 	return built, problems
 }
@@ -100,6 +113,7 @@ type rawJob struct {
 	Command          string            `toml:"command"`
 	Args             []string          `toml:"args"`
 	Timeout          string            `toml:"timeout"`
+	GracePeriod      string            `toml:"grace_period"`
 	Retry            int               `toml:"retry"`
 	Overlap          string            `toml:"overlap"`
 	WorkingDirectory string            `toml:"working_directory"`

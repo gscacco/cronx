@@ -25,3 +25,12 @@ schedule = "0 5 * * *"
 command = "@JOB_HELPER@"
 args = ["report", "@TEST_DIR@/stubborn.json", "ignore-term", "120s"]
 timeout = "1s"
+
+# The same refusal to stop, with a grace period of its own: two seconds instead
+# of the ten seconds a job that does not choose one is given.
+[jobs.brief]
+schedule = "0 6 * * *"
+command = "@JOB_HELPER@"
+args = ["report", "@TEST_DIR@/brief.json", "ignore-term", "120s"]
+timeout = "1s"
+grace_period = "2s"

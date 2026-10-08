@@ -94,6 +94,36 @@ timeout = "not-a-duration"
 			wantErr: "timeout",
 		},
 		{
+			name: "invalid grace period",
+			config: `
+[jobs.backup]
+schedule = "0 3 * * *"
+command = "/usr/local/bin/backup"
+grace_period = "two seconds"
+`,
+			wantErr: "grace_period",
+		},
+		{
+			name: "zero grace period",
+			config: `
+[jobs.backup]
+schedule = "0 3 * * *"
+command = "/usr/local/bin/backup"
+grace_period = "0s"
+`,
+			wantErr: "grace_period must be greater than 0",
+		},
+		{
+			name: "negative grace period",
+			config: `
+[jobs.backup]
+schedule = "0 3 * * *"
+command = "/usr/local/bin/backup"
+grace_period = "-1s"
+`,
+			wantErr: "grace_period must be greater than 0",
+		},
+		{
 			name: "invalid job name",
 			config: `
 [jobs."bad name"]

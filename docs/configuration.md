@@ -41,6 +41,7 @@ schedule = "0 3 * * *"            # required
 command = "/usr/local/bin/backup" # required, absolute path
 args = ["--incremental", "--destination", "/backup"]
 timeout = "30m"
+grace_period = "15s"              # time to stop after SIGTERM (default: 10s)
 retry = 2
 overlap = "skip"
 working_directory = "/var/lib/backup"
@@ -90,6 +91,7 @@ The job name is the TOML table key. It must match `[A-Za-z0-9_-]+`.
 | `command`           | string            | -        | Required. Absolute path of the executable. |
 | `args`              | array of strings  | `[]`     | Passed to the executable verbatim. |
 | `timeout`           | string (duration) | none     | Go duration (for example `30m`, `1h30m`). Negative values are rejected. |
+| `grace_period`      | string (duration) | `10s`    | How long the process is given to exit after `SIGTERM` before it is killed with `SIGKILL`. Must be greater than 0. |
 | `retry`             | integer           | `0`      | Additional attempts after the first failure; must not be negative. |
 | `overlap`           | string            | `"skip"` | One of `skip`, `allow`, `queue`. |
 | `working_directory` | string            | none     | Working directory of the process. |
@@ -98,6 +100,13 @@ The job name is the TOML table key. It must match `[A-Za-z0-9_-]+`.
 The `working_directory`, when it is set, must exist when the job runs: a job that
 cannot be started in it is recorded as a `spawn_error`, with an explanation that
 names the directory rather than the command.
+
+The `grace_period` is what a job is given to stop on its own before it is killed.
+When its `timeout` expires, and when the scheduler is asked to stop while the job
+is still running, the whole process group is asked to terminate with `SIGTERM`
+and is killed with `SIGKILL` once the grace period is over. Ten seconds is the
+default; a job that needs longer to shut down cleanly asks for more. See
+[security.md](security.md) for the process group and the signals.
 
 ## Validation
 
@@ -113,6 +122,7 @@ The following rules are enforced:
 - `command` must be an absolute path;
 - `retry` must not be negative;
 - `timeout`, when present, must be a valid, non-negative duration;
+- `grace_period`, when present, must be a valid duration greater than 0;
 - `overlap` must be one of `skip`, `allow`, `queue`;
 - `max_parallel_jobs` must be at least 1;
 - `timezone` must be `Local` or a name the zone database knows;
