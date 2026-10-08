@@ -147,6 +147,27 @@ func TestRunAppliesTheWorkingDirectory(t *testing.T) {
 	}
 }
 
+func TestRunNamesAMissingWorkingDirectory(t *testing.T) {
+	// SETUP
+	missing := filepath.Join(t.TempDir(), "gone")
+	command := newHelperCommand(t, "print", "")
+	command.Dir = missing
+
+	// EXERCISE
+	result, err := runner.New(clock.System{}).Run(context.Background(), command)
+
+	// VERIFY
+	if err == nil {
+		t.Fatalf("Run() succeeded, want an error for a working directory that does not exist")
+	}
+	if !strings.Contains(err.Error(), missing) {
+		t.Errorf("Run() error = %q, want it to name the missing working directory %q", err.Error(), missing)
+	}
+	if result.StartedAt.IsZero() {
+		t.Errorf("StartedAt is the zero time, want the time the attempt was made")
+	}
+}
+
 func TestRunReportsASpawnError(t *testing.T) {
 	// SETUP
 	command := runner.Command{Path: "/nonexistent/cronx-missing-executable"}
