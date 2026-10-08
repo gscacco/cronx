@@ -146,3 +146,42 @@ func TestExecuteRejectsAnUnknownJob(t *testing.T) {
 		t.Errorf("Execute() error = %q, want it to mention the job", err.Error())
 	}
 }
+
+func TestExecuteFinishesTheRunThatIsInFlightWhenTheSchedulerStops(t *testing.T) {
+	// SETUP: a job that runs until it is stopped.
+	definition := helperJob(t, "backup", "sleep")
+	definition.Env[helperSleep] = "30s"
+	subject, persistent, _ := buildScheduler(t, definition)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// EXERCISE: stop the scheduler while the job is in flight.
+	stopped := make(chan struct{})
+	go func() {
+		defer close(stopped)
+		_, _ = subject.Execute(ctx, "backup", time.Now())
+	}()
+	waitFor(t, "the run to be recorded as in progress", func() bool {
+		running, err := persistent.RunningRuns(context.Background(), "backup")
+		return err == nil && running == 1
+	})
+	cancel()
+	<-stopped
+
+	// VERIFY: the history is final as soon as the scheduler has stopped, so the
+	// row does not keep saying "running" until the next start repairs it.
+	runs, err := persistent.Runs(context.Background(), "backup", 10)
+	if err != nil {
+		t.Fatalf("Runs() returned an unexpected error: %v", err)
+	}
+	if len(runs) != 1 {
+		t.Fatalf("len(Runs()) = %d, want the single run that was started", len(runs))
+	}
+	if runs[0].Status == job.StatusRunning {
+		t.Errorf("the run is still %q after the scheduler stopped, want it finished", runs[0].Status)
+	}
+	if runs[0].FinishedAt.IsZero() {
+		t.Error("the run has no finishing time, want the instant the scheduler stopped it")
+	}
+}
