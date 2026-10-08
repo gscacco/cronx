@@ -1,8 +1,6 @@
 # cronx
 
-# cronx
-
-**cronx is a small, local job scheduler for Unix-like systems, written in Go and inspired by `cron`.**
+cronx is a small, local job scheduler for Unix-like systems, written in Go and inspired by `cron`.
 
 It runs scheduled jobs defined in a single TOML configuration file, executes each job according to its own cron schedule, and keeps a persistent record of every execution in a local SQLite database. Job output is written to a shared log file.
 
