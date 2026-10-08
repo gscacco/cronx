@@ -106,14 +106,15 @@ func (s *Scheduler) runAttempt(ctx context.Context, definition job.Job, number i
 	}
 
 	result, runErr := s.runner.Run(ctx, runner.Command{
-		Path:    definition.Command,
-		Args:    definition.Args,
-		Dir:     definition.WorkingDirectory,
-		Env:     definition.Env,
-		Timeout: definition.Timeout,
-		Stdout:  output,
-		Stderr:  output,
-		OnStart: onStart,
+		Path:        definition.Command,
+		Args:        definition.Args,
+		Dir:         definition.WorkingDirectory,
+		Env:         definition.Env,
+		Timeout:     definition.Timeout,
+		GracePeriod: definition.GracePeriod,
+		Stdout:      output,
+		Stderr:      output,
+		OnStart:     onStart,
 	})
 
 	status := statusFor(result, runErr)
