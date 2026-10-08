@@ -50,8 +50,9 @@ var validLoggingLevels = map[string]bool{
 
 // Scheduler holds the global scheduler settings.
 type Scheduler struct {
-	// Timezone is an IANA timezone name or "Local". Resolution to a location
-	// happens when the scheduler starts.
+	// Timezone is an IANA timezone name or "Local": the zone whose clock the
+	// scheduler computes activation times on. It is resolved to a location by
+	// Location.
 	Timezone string
 	// MaxParallelJobs is the maximum number of jobs running at the same time.
 	MaxParallelJobs int
@@ -166,6 +167,9 @@ func Parse(data []byte) (*Config, error) {
 
 	if raw.Scheduler.Timezone != "" {
 		cfg.Scheduler.Timezone = raw.Scheduler.Timezone
+	}
+	if _, err := cfg.Scheduler.Location(); err != nil {
+		problems = append(problems, err)
 	}
 	if raw.Scheduler.MaxParallelJobs != nil {
 		if *raw.Scheduler.MaxParallelJobs < 1 {
