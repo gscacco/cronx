@@ -1,0 +1,9 @@
+# A configuration that is wrong in exactly one way: the timezone is not a name
+# the zone database knows.
+
+[scheduler]
+timezone = "Europe/Roma"
+
+[jobs.backup]
+schedule = "0 3 * * *"
+command = "/usr/local/bin/backup"

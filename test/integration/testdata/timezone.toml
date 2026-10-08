@@ -1,0 +1,13 @@
+# A configuration whose activation times are computed on the clock of a zone of
+# its own, fourteen hours ahead of UTC, so that a test can tell the wall clock
+# cronx prints apart from the one the machine running it computes.
+#
+#   @JOB_HELPER@  the compiled program the job runs
+
+[scheduler]
+timezone = "Pacific/Kiritimati"
+
+[jobs.offset]
+schedule = "*/5 * * * *"
+command = "@JOB_HELPER@"
+args = ["out", "the offset job ran"]
