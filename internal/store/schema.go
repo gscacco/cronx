@@ -45,14 +45,20 @@ CREATE TABLE job_state (
 `,
 }
 
+// querier is the part of a database handle a version can be read through: the
+// pool, or the transaction that is about to migrate the schema.
+type querier interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
 // SchemaVersion returns the schema version stored in the database.
 func (s *Store) SchemaVersion(ctx context.Context) (int, error) {
-	return s.storedVersion(ctx)
+	return storedVersion(ctx, s.db)
 }
 
 // migrate brings the database up to CurrentSchemaVersion.
 func (s *Store) migrate(ctx context.Context) error {
-	version, err := s.storedVersion(ctx)
+	version, err := storedVersion(ctx, s.db)
 	if err != nil {
 		return err
 	}
@@ -71,10 +77,12 @@ func (s *Store) migrate(ctx context.Context) error {
 }
 
 // storedVersion returns the schema version recorded in the database, or zero
-// when the database has not been initialised yet.
-func (s *Store) storedVersion(ctx context.Context) (int, error) {
+// when the database has not been initialised yet. It reads through the given
+// handle, so that the version can also be checked inside the transaction that
+// is about to migrate the schema.
+func storedVersion(ctx context.Context, q querier) (int, error) {
 	var tables int
-	err := s.db.QueryRowContext(ctx,
+	err := q.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'schema_meta'`).Scan(&tables)
 	if err != nil {
 		return 0, fmt.Errorf("inspecting the database schema: %w", err)
@@ -84,7 +92,7 @@ func (s *Store) storedVersion(ctx context.Context) (int, error) {
 	}
 
 	var version int
-	err = s.db.QueryRowContext(ctx, `SELECT version FROM schema_meta LIMIT 1`).Scan(&version)
+	err = q.QueryRowContext(ctx, `SELECT version FROM schema_meta LIMIT 1`).Scan(&version)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
 	}
@@ -96,8 +104,21 @@ func (s *Store) storedVersion(ctx context.Context) (int, error) {
 
 // applyMigration runs the migration with the given version and records it, all
 // in one transaction so that a failure leaves the database untouched.
+//
+// The version is read again inside the transaction, which is serialised against
+// the other processes by the immediate transaction the connection begins. A
+// process that finds the migration already applied — because another one
+// applied it in the meantime — does nothing instead of failing with "table
+// schema_meta already exists".
 func (s *Store) applyMigration(ctx context.Context, version int) error {
 	return s.inTransaction(ctx, func(tx *sql.Tx) error {
+		applied, err := storedVersion(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if applied >= version {
+			return nil
+		}
 		if _, err := tx.ExecContext(ctx, migrations[version-1]); err != nil {
 			return fmt.Errorf("applying schema version %d: %w", version, err)
 		}
