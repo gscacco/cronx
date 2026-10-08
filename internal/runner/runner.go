@@ -14,6 +14,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
@@ -100,6 +101,9 @@ func (r *Runner) Run(ctx context.Context, command Command) (Result, error) {
 	if command.Timeout < 0 {
 		return r.finish(result), fmt.Errorf("job timeout must not be negative, got %s", command.Timeout)
 	}
+	if err := usableDirectory(command.Dir); err != nil {
+		return r.finish(result), err
+	}
 
 	process := exec.Command(path, command.Args...)
 	process.Dir = command.Dir
@@ -139,4 +143,22 @@ func absolutePath(path string) (string, error) {
 		return "", fmt.Errorf("job command %q must be an absolute path", path)
 	}
 	return path, nil
+}
+
+// usableDirectory rejects a working directory the job could not be started in.
+// The operating system reports a failed chdir as a failed fork of the program,
+// which would name the command instead of the directory that is missing;
+// checking the directory first makes the explanation name the directory.
+func usableDirectory(dir string) error {
+	if dir == "" {
+		return nil
+	}
+	info, err := os.Stat(dir)
+	if err != nil {
+		return fmt.Errorf("working directory %s: %w", dir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("working directory %s is not a directory", dir)
+	}
+	return nil
 }

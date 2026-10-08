@@ -110,11 +110,13 @@ func TestAWorkingDirectoryThatDoesNotExistIsASpawnError(t *testing.T) {
 	if run.Error == "" {
 		t.Error("the run was recorded without an explanation, want the failure to be described")
 	}
-	// The explanation the machine produces for this case names the command
-	// rather than the directory that is missing, because the operating system
-	// reports a failed chdir as a failed fork of the program. The status and
-	// the absence of a process are what cronx promises; the wording is only
-	// checked to be present, so that improving it does not break a test.
+	// The explanation names the directory that is missing, not the command:
+	// the operating system reports a failed chdir as a failed fork of the
+	// program, so cronx checks the directory before it starts the job.
+	if missing := environment.path("does-not-exist"); !strings.Contains(run.Error, missing) {
+		t.Errorf("the run was recorded with %q, want it to name the missing working directory %q",
+			run.Error, missing)
+	}
 	if _, err := os.Stat(environment.path("missing.json")); err == nil {
 		t.Error("the job ran, want no process to have been started at all")
 	}

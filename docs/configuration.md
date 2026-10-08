@@ -89,6 +89,10 @@ The job name is the TOML table key. It must match `[A-Za-z0-9_-]+`.
 | `working_directory` | string            | none     | Working directory of the process. |
 | `env`               | table of strings  | none     | Extra environment variables for the process. |
 
+The `working_directory`, when it is set, must exist when the job runs: a job that
+cannot be started in it is recorded as a `spawn_error`, with an explanation that
+names the directory rather than the command.
+
 ## Validation
 
 `cronx validate` loads the configuration and reports every problem it finds, so
