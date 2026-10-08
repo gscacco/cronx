@@ -67,7 +67,7 @@ else.
   with D29 and D32.
 - [x] Close the race that can make two processes migrating a brand new database
   fail with `table schema_meta already exists` ([testing.md](testing.md)).
-- [ ] Name the missing working directory, instead of reporting the command
+- [x] Name the missing working directory, instead of reporting the command
   ([testing.md](testing.md)).
 - [ ] Finish the run that is in flight when the scheduler stops, instead of
   leaving it `running` until the next start ([testing.md](testing.md)).

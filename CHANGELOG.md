@@ -23,6 +23,8 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 
 ### Fixed
 
+- A job whose `working_directory` does not exist is now explained by naming the
+  directory, instead of naming the command as if the program were missing.
 - Two cronx processes that open a brand new state database at the same moment no
   longer race: the migration is applied once, and the second process finds it
   done instead of failing with `table schema_meta already exists`.
