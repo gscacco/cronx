@@ -9,7 +9,7 @@ import (
 
 // CurrentSchemaVersion is the schema version this build understands. It always
 // equals the number of migrations below.
-const CurrentSchemaVersion = 1
+const CurrentSchemaVersion = 2
 
 // migrations are applied in order; the index plus one is the resulting schema
 // version.
@@ -41,6 +41,18 @@ CREATE TABLE job_state (
 	last_started_at  TEXT,
 	last_finished_at TEXT,
 	updated_at       TEXT NOT NULL
+);
+`,
+	// Version 2: the lease that keeps one scheduler per state. The single row
+	// is what the scheduler holds while it runs; when it is absent no scheduler
+	// has the state, and when it is expired the scheduler that recorded it is
+	// gone and the state can be taken over.
+	`
+CREATE TABLE scheduler_lease (
+	id          INTEGER PRIMARY KEY CHECK (id = 1),
+	holder      TEXT    NOT NULL,
+	acquired_at TEXT    NOT NULL,
+	expires_at  TEXT    NOT NULL
 );
 `,
 }

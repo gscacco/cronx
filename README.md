@@ -63,6 +63,9 @@ Implemented:
 - **Restart behaviour.** Runs left in progress by a process that died are closed
   on the next start, and activations missed while cronx was not running are not
   replayed.
+- **One scheduler per state.** `cronx run` holds a lease on the state, so a
+  second one refuses to start instead of scheduling the same jobs again;
+  `cronx status` says who is running and until when.
 - **Command line.** `validate`, `list`, `status`, `history`, `run-once`, `run` and
   `version`, with a `--config` flag; `run-once` exits non-zero when the job fails,
   so it can be used from scripts.
@@ -70,13 +73,11 @@ Implemented:
 Not implemented yet:
 
 - **Job dependencies** are not supported.
-- **There is no lock on the state.** Start one scheduler per home directory;
-  two processes would both schedule the same jobs.
 - **`overlap = "skip"`** only takes effect when more than one job may run at a
   time (`max_parallel_jobs` of at least 2). With the default of 1, a trigger that
   arrives while the job is still running waits for a free slot and then runs.
 
-The last two items are behaviours the test suite found, with the evidence, in
+The last item is a behaviour the test suite found, with the evidence, in
 [docs/testing.md](docs/testing.md).
 
 ## Build

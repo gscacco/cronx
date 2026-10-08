@@ -89,8 +89,9 @@ security tests guard this behaviour.
 
 ## Persistence
 
-SQLite stores execution history (`runs`) and runtime state (`job_state`), and a
-`schema_meta` table tracks the schema version. Timestamps are stored as UTC in
+SQLite stores execution history (`runs`) and runtime state (`job_state`), a
+`schema_meta` table tracks the schema version, and a `scheduler_lease` row is the
+lease that keeps one scheduler per state (D34). Timestamps are stored as UTC in
 RFC 3339 format. Job output is written to a single log file on the filesystem and
 referenced from the history.
 
@@ -123,7 +124,7 @@ referenced from the history.
 | D23 | `retry = N` means N additional attempts after the first |
 | D24 | `overlap`: `skip` (default), `allow`, `queue` |
 | D25 | A global `max_parallel_jobs` cap |
-| D26 | Schema: `schema_meta`, `runs`, `job_state` |
+| D26 | Schema: `schema_meta`, `runs`, `job_state`, `scheduler_lease` |
 | D27 | Timestamps: UTC RFC 3339 |
 | D28 | Run status: `scheduled`, `running`, `succeeded`, `failed`, `timed_out`, `spawn_error`, `skipped` |
 | D29 | The output of every run is written to one shared log; each line carries an RFC 3339 timestamp, the job, the run and the pid |
@@ -131,3 +132,4 @@ referenced from the history.
 | D31 | Commands: `run`, `validate`, `list`, `history`, `run-once`, `status`, `version` |
 | D32 | The run log and the status database can be relocated from the configuration: `[logging].path` and `[storage].path` (both optional) |
 | D33 | Versions follow Semantic Versioning: before 1.0 a new key, a new command or a visible behaviour change is a `MINOR` release and a fix on its own a `PATCH`; the schema and the command line freeze at 1.0.0 |
+| D34 | One scheduler per state: a lease row in the database, taken before the first activation, renewed every ten seconds and given back when the scheduler stops, so a second `cronx run` is refused; a lease of a scheduler killed outright expires after thirty seconds |

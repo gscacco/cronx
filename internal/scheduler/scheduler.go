@@ -36,6 +36,10 @@ type Options struct {
 	Clock clock.Clock
 	// Logger receives what the scheduler itself does.
 	Logger *slog.Logger
+	// Holder is the identity recorded as the holder of the state, so that a
+	// second scheduler can be told who has it. Empty means this machine and
+	// this process, which is what a scheduler started by a person is.
+	Holder string
 }
 
 // Activation is a job that is due to run.
@@ -54,6 +58,7 @@ type Scheduler struct {
 	runner    *runner.Runner
 	clock     clock.Clock
 	logger    *slog.Logger
+	holder    string
 	schedules map[string]schedule.Schedule
 	names     []string
 	next      map[string]time.Time
@@ -83,6 +88,11 @@ func New(options Options) (*Scheduler, error) {
 		parallel = 1
 	}
 
+	holder := options.Holder
+	if holder == "" {
+		holder = leaseHolder()
+	}
+
 	built := &Scheduler{
 		config:    options.Config,
 		store:     options.Store,
@@ -90,6 +100,7 @@ func New(options Options) (*Scheduler, error) {
 		runner:    options.Runner,
 		clock:     options.Clock,
 		logger:    options.Logger,
+		holder:    holder,
 		schedules: make(map[string]schedule.Schedule, len(options.Config.Jobs)),
 		next:      make(map[string]time.Time, len(options.Config.Jobs)),
 		locks:     make(map[string]*sync.Mutex, len(options.Config.Jobs)),

@@ -10,6 +10,13 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 
 ### Added
 
+- One scheduler per state: `cronx run` takes a lease on the state, renews it
+  while it runs and gives it back when it stops, so a second `cronx run` on the
+  same state refuses to start instead of scheduling the same jobs again. A
+  scheduler killed outright cannot give the lease back, and its lease expires
+  after thirty seconds.
+- `cronx status` reports whether a scheduler is driving the state, naming the
+  holder and when its lease expires.
 - `[jobs.<name>].grace_period` chooses how long a job is given to stop after
   `SIGTERM` before it is killed with `SIGKILL`: ten seconds unless the job asks
   for another duration. The runner already honoured the value; the configuration

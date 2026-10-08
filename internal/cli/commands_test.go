@@ -163,6 +163,63 @@ func TestStatusShowsTheLastOutcomeOfEveryJob(t *testing.T) {
 	}
 }
 
+func TestStatusSaysWhetherASchedulerIsRunning(t *testing.T) {
+	// SETUP
+	home := newTestHome(t)
+	path := writeTestConfig(t, home, twoJobs)
+
+	// EXERCISE: nothing has driven the state yet.
+	before, err := runCLI(t, "status", "--config", path)
+
+	// VERIFY
+	if err != nil {
+		t.Fatalf("status returned an unexpected error: %v", err)
+	}
+	if !strings.Contains(before, "no scheduler is running") {
+		t.Errorf("status output = %q, want it to say that nothing is driving the state", before)
+	}
+
+	// SETUP: a scheduler takes the state.
+	seedLease(t, home, "host:4242", time.Now(), time.Minute)
+
+	// EXERCISE
+	running, err := runCLI(t, "status", "--config", path)
+
+	// VERIFY
+	if err != nil {
+		t.Fatalf("status returned an unexpected error: %v", err)
+	}
+	if !strings.Contains(running, "scheduler running since") {
+		t.Errorf("status output = %q, want it to report the scheduler that holds the state", running)
+	}
+	if !strings.Contains(running, "host:4242") {
+		t.Errorf("status output = %q, want it to name the holder of the state", running)
+	}
+}
+
+func TestStatusReportsASchedulerWhoseLeaseHasExpiredAsGone(t *testing.T) {
+	// SETUP: the state of a scheduler that was killed instead of stopping, so
+	// its lease was never given back.
+	home := newTestHome(t)
+	path := writeTestConfig(t, home, twoJobs)
+	seedLease(t, home, "host:4242", time.Now().Add(-time.Hour), time.Minute)
+
+	// EXERCISE
+	output, err := runCLI(t, "status", "--config", path)
+
+	// VERIFY: nothing is driving the state, and the reader is told which
+	// scheduler left the lease behind.
+	if err != nil {
+		t.Fatalf("status returned an unexpected error: %v", err)
+	}
+	if !strings.Contains(output, "no scheduler is running") {
+		t.Errorf("status output = %q, want it to say that nothing is driving the state", output)
+	}
+	if !strings.Contains(output, "host:4242") {
+		t.Errorf("status output = %q, want it to name the scheduler that left the lease", output)
+	}
+}
+
 func TestVersionPrintsTheVersion(t *testing.T) {
 	// SETUP
 	newTestHome(t)
