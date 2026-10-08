@@ -35,6 +35,10 @@ var invalidConfigurations = []struct {
 		fixture: "invalid/overlap.toml",
 		problem: `job "backup": overlap "sometimes" is not one of skip, allow, queue`,
 	},
+	{
+		fixture: "invalid/timezone.toml",
+		problem: `scheduler.timezone "Europe/Roma" is not a known timezone`,
+	},
 }
 
 func TestARejectedConfigurationStopsEveryCommand(t *testing.T) {

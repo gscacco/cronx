@@ -75,9 +75,9 @@ layout is why this is a `MINOR` release and not a patch: a reader of the old
 Every item here changes behaviour a user can see — a job starts at a different
 moment, or a second scheduler refuses to start — so the release is a `MINOR`.
 
-- [ ] Apply `[scheduler].timezone`: the key is parsed today but the scheduler
-  reads the machine clock and ignores it ([testing.md](testing.md)).
-- [ ] Validate `timezone` in `cronx validate`, rather than only when the
+- [x] Apply `[scheduler].timezone`, so that activations are computed on the
+  clock of the configured zone ([testing.md](testing.md)).
+- [x] Validate `timezone` when the configuration is read, rather than when the
   scheduler starts ([configuration.md](configuration.md)).
 - [ ] Allow one scheduler per state: a second `cronx run` against the same
   database should refuse to start instead of duplicating executions

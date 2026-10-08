@@ -29,8 +29,24 @@ func (f Fixed) Now() time.Time {
 	return f.T
 }
 
-// Both implementations must satisfy Clock.
+// Zoned reports the time of another clock expressed in a fixed location. It is
+// how the configured timezone reaches the scheduler: the instant is the same,
+// the wall clock a job is scheduled on is not.
+type Zoned struct {
+	// Base is the clock the instant comes from.
+	Base Clock
+	// Location is the zone the instant is expressed in. It must not be nil.
+	Location *time.Location
+}
+
+// Now returns the current time of Base, in Location.
+func (z Zoned) Now() time.Time {
+	return z.Base.Now().In(z.Location)
+}
+
+// Every implementation must satisfy Clock.
 var (
 	_ Clock = System{}
 	_ Clock = Fixed{}
+	_ Clock = Zoned{}
 )

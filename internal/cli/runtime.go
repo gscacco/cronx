@@ -14,12 +14,14 @@ import (
 )
 
 // environment carries what a command needs: the configuration, the store, the
-// shared run log and a scheduler built on top of them.
+// shared run log, the clock of the configured timezone and a scheduler built on
+// top of them.
 type environment struct {
 	configuration config.Config
 	store         *store.Store
 	logs          *logx.Log
 	logger        *slog.Logger
+	clock         clock.Clock
 	scheduler     *scheduler.Scheduler
 }
 
@@ -32,6 +34,16 @@ func openEnvironment(path string, output io.Writer) (*environment, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// The scheduler decides and reports when a job runs on the clock of the
+	// configured timezone, so every command that says "the next run is at ..."
+	// says it in that zone. Recording what ran stays on the clock of the
+	// machine: the instants in the database are UTC.
+	location, err := configuration.Scheduler.Location()
+	if err != nil {
+		return nil, err
+	}
+	scheduled := clock.Zoned{Base: clock.System{}, Location: location}
 
 	statePath, err := config.StatePath(configuration.Storage.Path)
 	if err != nil {
@@ -60,7 +72,7 @@ func openEnvironment(path string, output io.Writer) (*environment, error) {
 		Store:  persistent,
 		Logs:   logs,
 		Runner: runner.New(clock.System{}),
-		Clock:  clock.System{},
+		Clock:  scheduled,
 		Logger: logger,
 	})
 	if err != nil {
@@ -73,6 +85,7 @@ func openEnvironment(path string, output io.Writer) (*environment, error) {
 		store:         persistent,
 		logs:          logs,
 		logger:        logger,
+		clock:         scheduled,
 		scheduler:     built,
 	}, nil
 }
