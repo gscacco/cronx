@@ -69,7 +69,7 @@ else.
   fail with `table schema_meta already exists` ([testing.md](testing.md)).
 - [x] Name the missing working directory, instead of reporting the command
   ([testing.md](testing.md)).
-- [ ] Finish the run that is in flight when the scheduler stops, instead of
+- [x] Finish the run that is in flight when the scheduler stops, instead of
   leaving it `running` until the next start ([testing.md](testing.md)).
 
 ### 0.3.0 — scheduling you can rely on

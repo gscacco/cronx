@@ -53,9 +53,12 @@ being tested.
 | `configuration_test.go` | a configuration that is wrong in one way is rejected by every command, with a useful explanation and without touching the state; the configuration is found through `--config`, `CRONX_CONFIG` or the home directory |
 
 The race two processes can meet when they open a brand new database at the same
-moment is covered by the package tests instead, because it needs an interleaving
-that no process can be asked for: `internal/store` applies a migration a second
-time, and opens one database from several goroutines at once.
+moment, and the outcome of a run that is in flight when the scheduler stops, are
+covered by the package tests instead, because they need an interleaving or a
+cancellation that no process can be asked for: `internal/store` applies a
+migration a second time and opens one database from several goroutines at once,
+and `internal/scheduler` cancels the context of a running job and checks that
+its row is finished.
 
 ## How the tests are put together
 
@@ -161,11 +164,3 @@ either side of it.
   configuration skips the trigger as documented, which is what the overlap test
   uses. Which of the two rules should win for the single-slot case is a
   behavioural decision, so no test asserts either outcome.
-* **A run that is in flight when the scheduler stops can stay recorded as in
-  progress.** Stopping the scheduler stops the job and waits for it, but the
-  outcome is written with a context that has already been cancelled, so the row
-  keeps saying `running` until the next start closes it as `failed` with the
-  documented explanation. The history is therefore not final when the scheduler
-  exits, although it is repaired on the next start, which is the behaviour
-  [persistence.md](persistence.md) describes. The overlap test checks that the
-  job is stopped, not that its row is finished.
