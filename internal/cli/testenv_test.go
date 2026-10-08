@@ -73,3 +73,18 @@ func seedRun(t *testing.T, home, jobName string, status job.Status, startedAt ti
 		t.Fatalf("FinishRun() returned an unexpected error: %v", err)
 	}
 }
+
+// seedLease records, directly in the database of the given home, that a
+// scheduler holds the state.
+func seedLease(t *testing.T, home, holder string, acquiredAt time.Time, ttl time.Duration) {
+	t.Helper()
+	persistent, err := store.Open(filepath.Join(home, ".cronx", "state.db"))
+	if err != nil {
+		t.Fatalf("opening the store: %v", err)
+	}
+	defer func() { _ = persistent.Close() }()
+
+	if _, err := persistent.AcquireLease(context.Background(), holder, acquiredAt, ttl); err != nil {
+		t.Fatalf("AcquireLease() returned an unexpected error: %v", err)
+	}
+}
