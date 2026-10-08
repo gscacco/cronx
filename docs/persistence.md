@@ -53,6 +53,24 @@ A small cache with one row per job: the last status, the last start and finish
 times and when it was updated. It exists so that the scheduler and the CLI can
 answer "what happened to this job last time?" without scanning the history.
 
+### `scheduler_lease`
+
+Holds a single row: the lease that keeps one scheduler per state.
+
+| Column        | Type | Meaning |
+| ------------- | ---- | ------- |
+| `holder`      | text | Who took the lease: the machine and the process, as `host:pid`. |
+| `acquired_at` | text | When it was taken (UTC, RFC 3339). |
+| `expires_at`  | text | When it stops being valid (UTC, RFC 3339). |
+
+`cronx run` takes the lease before it schedules anything, and refuses to start
+while another scheduler holds one that has not expired. The lease is renewed
+while the scheduler runs and deleted when it stops, so the state is free the
+moment a scheduler stops cleanly. A scheduler that was **killed** instead leaves
+its lease behind, and the state becomes free again when the lease expires:
+thirty seconds is the lifetime of a lease, a third of which is the interval
+between two renewals. `cronx status` reports the lease, if there is one.
+
 ## Statuses
 
 | Status        | Meaning |
@@ -99,7 +117,9 @@ policy is `skip`.
 A scheduler that is **stopped** is not one of those cases: it stops the job it is
 running, waits for it, and records the outcome before it exits, so the history is
 already final when the process is gone. The repair on the next start is what
-covers a process that was **killed** before it could record anything.
+covers a process that was **killed** before it could record anything. A
+scheduler that was killed leaves its lease behind, so that repair happens when
+the lease expires and the next `cronx run` takes the state.
 
 Activation times that passed while the scheduler was not running are **not**
 replayed: see [scheduling.md](scheduling.md).

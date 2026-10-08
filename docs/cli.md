@@ -68,7 +68,17 @@ $ cronx status
 JOB     LAST STATUS  LAST RUN                  IN PROGRESS
 backup  succeeded    2026-10-04 03:00:00 CEST  no
 cleanup never run    -                         no
+
+scheduler running since 2026-10-04 12:00:00 CEST (workstation:4182), lease until 2026-10-04 12:00:30 CEST
 ```
+
+The last line says whether a scheduler is driving the state. Without one the
+jobs are not being scheduled at all, however healthy their last runs look. The
+lease it names is the right to run a scheduler on the state: the holder is the
+machine and the process, and the expiry is when the state is free again. A lease
+that has expired was left behind by a scheduler that was killed rather than
+stopped, and is reported as what it is — a state nothing is driving, which the
+next `cronx run` takes.
 
 ## history
 
@@ -98,6 +108,10 @@ output goes to the run log. The overlap and retry policies, the timeout and the
 grace period of the job still apply: a `run-once` that arrives while the job is
 already running is skipped when the overlap policy is `skip`.
 
+`run-once` takes no lease on the state: it is an action of the person running it,
+not a scheduler driving the state, so it runs whether or not `cronx run` is
+running.
+
 ## run
 
 ```console
@@ -109,6 +123,20 @@ and to the standard error. Interrupting it (`Ctrl-C`, `SIGINT` or `SIGTERM`)
 stops the jobs that are still running, waits for them and then exits. To keep it
 running in the background, use the usual tools of your operating system, for
 example a service manager.
+
+One scheduler drives a state at a time. `cronx run` takes a lease on the state
+before it schedules anything, renews it while it runs and gives it back when it
+stops, so a second `cronx run` on the same state refuses to start instead of
+scheduling the same jobs a second time:
+
+```console
+$ cronx run
+cronx: another scheduler is running: workstation:4182 holds the state until 2026-10-04T10:00:30Z
+```
+
+A scheduler that is killed outright cannot give the lease back, so it keeps the
+state for at most thirty seconds, the lifetime of a lease. `cronx status`
+reports the scheduler that holds the state, if any.
 
 ## version
 

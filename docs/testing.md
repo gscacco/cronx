@@ -44,6 +44,7 @@ being tested.
 | --------- | ---------------- |
 | `binary_test.go` | a configuration file is walked through `validate`, `list` and `run-once`, and the run reaches the file the job writes and the row SQLite records |
 | `scheduling_test.go` | a scheduled job runs, is recorded and is reported by `history` and `status`; a trigger that arrives while the job is still running is skipped and no second execution happens |
+| `singleton_test.go` | a second `cronx run` on the same state is refused and schedules nothing, the state is given back when the scheduler stops, and `status` reports the scheduler that holds it |
 | `execution_test.go` | the arguments reach the process verbatim (shell metacharacters included), the working directory is the configured one, a missing one is a `spawn_error` that names the directory, and the environment of a job is exactly the documented minimal one plus its own |
 | `timeout_test.go` | a job that outlives its timeout is stopped, the process group it started is stopped with it, and a job that refuses SIGTERM is killed after the grace period, which is the ten second default unless the job sets one |
 | `retry_test.go` | a failing job is attempted once per configured retry, every attempt is recorded separately, and the attempts stop as soon as one succeeds |
@@ -60,6 +61,12 @@ cancellation that no process can be asked for: `internal/store` applies a
 migration a second time and opens one database from several goroutines at once,
 and `internal/scheduler` cancels the context of a running job and checks that
 its row is finished.
+
+The lease that keeps one scheduler per state is covered the same way, in
+`internal/store`: a state is taken, refused to a second holder, taken over once
+the lease of the first one has expired, renewed, and given back. Expiry is a
+matter of arithmetic between two instants, which a test decides without waiting
+half a minute for it to arrive.
 
 The nights a clock moves are checked the same way, in `internal/schedule`: the
 activation after a daylight saving transition is asked for directly, because no
@@ -135,14 +142,6 @@ The suite checks cronx against its documentation. Where the two do not agree,
 the disagreement is recorded here rather than papered over, and no test asserts
 either side of it.
 
-* **There is no singleton scheduler.** Two `cronx run` processes using the same
-  configuration and the same state database both start, and both run the jobs
-  they find due: the overlap policies are enforced inside one process, not
-  across processes, and nothing takes a lock on the state. cronx does not
-  document a singleton guarantee, so no test asserts one. Running the scheduler
-  twice on the same state is therefore a way to duplicate executions, and a
-  deliberate decision — a lock file, or a lease in the database — is needed
-  before it can be prevented.
 * **There is no `cronx logs` command.** [cli.md](cli.md) does not list one, so
   the suite checks the run log directly: `~/.cronx/logs/runs.log`, whose lines
   carry the run identifier that `cronx history` reports.
