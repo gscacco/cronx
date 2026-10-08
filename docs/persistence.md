@@ -96,5 +96,10 @@ that the scheduler stopped while they were in progress. This keeps the history
 truthful and stops a stale `running` row from blocking a job whose overlap
 policy is `skip`.
 
+A scheduler that is **stopped** is not one of those cases: it stops the job it is
+running, waits for it, and records the outcome before it exits, so the history is
+already final when the process is gone. The repair on the next start is what
+covers a process that was **killed** before it could record anything.
+
 Activation times that passed while the scheduler was not running are **not**
 replayed: see [scheduling.md](scheduling.md).
