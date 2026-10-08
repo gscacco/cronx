@@ -10,6 +10,11 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 
 ### Added
 
+- `[jobs.<name>].grace_period` chooses how long a job is given to stop after
+  `SIGTERM` before it is killed with `SIGKILL`: ten seconds unless the job asks
+  for another duration. The runner already honoured the value; the configuration
+  could not express it, although [security.md](docs/security.md) promised it per
+  job.
 - `[scheduler].timezone` is applied: activation times are computed on the clock
   of the configured zone, so a job runs at the wall clock time of that zone
   rather than of the machine, and `cronx list` prints the next run there. The

@@ -94,9 +94,9 @@ job "backup" finished with status "succeeded"
 ```
 
 The run is recorded in the history exactly as a scheduled run would be, and its
-output goes to the run log. The overlap, retry and timeout policies of
-the job still apply: a `run-once` that arrives while the job is already running
-is skipped when the overlap policy is `skip`.
+output goes to the run log. The overlap and retry policies, the timeout and the
+grace period of the job still apply: a `run-once` that arrives while the job is
+already running is skipped when the overlap policy is `skip`.
 
 ## run
 

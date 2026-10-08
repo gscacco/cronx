@@ -15,8 +15,9 @@ func newRunOnceCommand(configPath *string) *cobra.Command {
 		Short: "Run a job immediately, whatever its schedule",
 		Long: "Run a job immediately, whatever its schedule.\n\n" +
 			"The run is recorded in the history and its output is written to the\n" +
-			"usual log file, exactly as it would be by the scheduler. The overlap,\n" +
-			"retry and timeout policies of the job still apply.",
+			"usual log file, exactly as it would be by the scheduler. The overlap\n" +
+			"and retry policies, the timeout and the grace period of the job still\n" +
+			"apply.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
