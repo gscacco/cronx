@@ -1,9 +1,12 @@
 # Scheduling
 
 cronx schedules every job with a cron expression, in the spirit of traditional
-Unix `cron`: five fields, or a descriptor that stands for a fixed time.
+Unix `cron`: five fields, six with the seconds field in front of them, or a
+descriptor that stands for a fixed time.
 
 ## Expression format
+
+The five fields a traditional expression has:
 
 ```
 ┌──────────── minute        (0-59)
@@ -13,6 +16,15 @@ Unix `cron`: five fields, or a descriptor that stands for a fixed time.
 │ │ │ │ ┌──── day of week   (0-6, or sun-sat; 7 also means Sunday)
 │ │ │ │ │
 * * * * *
+```
+
+An expression that states the seconds as well carries the seconds in front of
+them, which makes six fields:
+
+```
+┌──────────── second        (0-59)
+│
+* * * * * *
 ```
 
 ## Supported syntax
@@ -34,8 +46,26 @@ A value that carries a step must use `*` or a range: `*/15` and `5-59/15` are
 valid, while `5/15` is rejected with an explanatory error rather than being
 given a surprising meaning.
 
-The following are deliberately **not** supported: a leading seconds field, and
-the `L`, `W`, `#` and `?` operators.
+The following are deliberately **not** supported: the `L`, `W`, `#` and `?`
+operators.
+
+## Seconds
+
+The seconds field is the optional one, and it is the first. It accepts what the
+other fields accept — `*`, a value, a range, a list and a step — and it takes no
+names, because there are none for a second.
+
+A five-field expression leaves the seconds unsaid, and what it leaves unsaid is
+zero: its activations are on the minute, exactly as they always were. Writing the
+seconds is what makes a job run inside the minute, and a job that runs several
+times a minute is a job whose triggers the overlap policy judges one by one.
+
+```
+*/10 * * * * *    every ten seconds
+0,30 * * * * *    at :00 and :30 of every minute
+30 * * * * *      at :30 of every minute
+0 0 3 * * *       every day at 03:00, the same as 0 3 * * *
+```
 
 ## Descriptors
 
@@ -96,13 +126,18 @@ Two rules cover the nights a clock moves:
 - an activation that a forward transition removes does not exist, so it is
   skipped: on the night the clock jumps from 02:00 to 03:00, a job at
   `30 2 * * *` does not run at all;
-- an activation that a backward transition repeats fires once, not twice.
+- an activation that a backward transition repeats fires once, not twice: an
+  expression that states the seconds walks through the repeated hour once, taking
+  the activations it has not reached yet from that hour's second pass, so no wall
+  time of it runs twice either.
 
 ## Missed runs
 
 cronx does not catch up. If the scheduler is not running when a job becomes
 due, that activation is simply skipped and the next one is computed from the
-current time. There are no "missed run" bursts after a restart.
+current time. There are no "missed run" bursts after a restart, and the seconds
+field changes nothing about that: a job that fires every ten seconds is not run
+thirty times to make up for the five minutes the scheduler was down.
 
 ## Next activation
 
@@ -171,6 +206,9 @@ its jobs before it exits.
 | `0 9-17 * * mon-fri`  | hourly from 09:00 to 17:00, on weekdays |
 | `0 0 1 * *`           | at midnight on the first day of every month |
 | `0 0 13 * fri`        | at midnight on the 13th and on every Friday |
+| `*/10 * * * * *`      | every ten seconds |
+| `0,30 * * * * *`      | at :00 and :30 of every minute |
+| `0 0 3 * * *`         | every day at 03:00, the same as `0 3 * * *` |
 | `@daily`              | every day at midnight |
 | `@monthly`            | at midnight on the first day of every month |
 | `@reboot`             | once, when the scheduler starts |

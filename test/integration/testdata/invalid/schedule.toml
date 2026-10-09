@@ -1,5 +1,5 @@
 # A configuration that is wrong in exactly one way: the schedule has four
-# fields, where five are required.
+# fields, where five are required, or six with the seconds field first.
 
 [jobs.backup]
 schedule = "0 3 * *"

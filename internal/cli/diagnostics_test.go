@@ -10,7 +10,7 @@ import (
 var brokenProblems = []string{
 	"scheduler.max_parallel_jobs must be at least 1, got 0",
 	`logging.level "verbose" is not one of debug, error, info, warn`,
-	`job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, got 4`,
+	`job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, or 6 with the seconds field first, got 4`,
 	`job "backup": command "backup" must be an absolute path`,
 	`job "backup": retry must not be negative, got -1`,
 	`job "cleanup": schedule is not valid: cron expression "@every-minute" is not a known` +

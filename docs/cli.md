@@ -47,6 +47,11 @@ happens without it, so that the file can be read as its own reference:
 # timezone = "Local"            # an IANA name such as "Europe/Rome", or "Local" for the zone of the machine
 # max_parallel_jobs = 1         # how many jobs may run at the same time
 
+# The jobs. A job is one [jobs.<name>] table; the name may hold letters, digits,
+# - and _. Its schedule is a cron expression of five fields, or of six with the
+# seconds field in front of them, or a descriptor: @yearly, @monthly, @weekly,
+# @daily, @midnight and @hourly stand for a fixed time, and @reboot runs the job
+# once, when the scheduler starts.
 [jobs.hello]
 schedule = "*/5 * * * *"        # a five-field cron expression: every five minutes
 command = "/bin/echo"           # required, an absolute path: cronx never looks a command up in PATH
@@ -70,7 +75,7 @@ $ cronx validate
 $ cronx validate --config examples/configs/broken.toml
 cronx: invalid configuration: scheduler.max_parallel_jobs must be at least 1, got 0
 logging.level "verbose" is not one of debug, error, info, warn
-job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, got 4
+job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, or 6 with the seconds field first, got 4
 job "backup": command "backup" must be an absolute path
 ...
 ```

@@ -1,0 +1,10 @@
+# Configuration for a job whose schedule has a seconds field: it fires more than
+# once a minute, which no five-field expression can do.
+#
+#   @TEST_DIR@    a directory only the test knows, removed with it
+#   @JOB_HELPER@  the compiled program the job runs
+
+[jobs.ticks]
+schedule = "*/2 * * * * *"
+command = "@JOB_HELPER@"
+args = ["append", "@TEST_DIR@/ticks", "tick\n"]

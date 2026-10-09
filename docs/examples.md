@@ -11,6 +11,7 @@ stale: the test suite reads the same files, so an example that stops being valid
 | [`full.toml`](../examples/configs/full.toml) | Every field of a job, plus the global scheduler and logging settings, all three overlap policies and a schedule that can never match. |
 | [`maintenance.toml`](../examples/configs/maintenance.toml) | A realistic set-up for a single server: backup, log rotation, vacuum, report. |
 | [`descriptors.toml`](../examples/configs/descriptors.toml) | The descriptors cronx accepts: the six fixed times, each next to the expression it stands for, and `@reboot`. |
+| [`seconds.toml`](../examples/configs/seconds.toml) | The seconds field: two jobs that run several times a minute. |
 | [`broken.toml`](../examples/configs/broken.toml) | Deliberately invalid: the reference for what the diagnostics look like. |
 
 The commands of the valid examples are placeholders pointing at the usual
@@ -120,7 +121,7 @@ trigger must be honoured.
 ## descriptors.toml
 
 A fixed time — or the start of the scheduler — can be written as a descriptor
-instead of as five fields:
+instead of as the fields of an expression:
 
 | Job | Schedule | Time |
 | --- | -------- | ---- |
@@ -151,6 +152,31 @@ yearly    @yearly    2027-01-01 00:00:00 CET
 The descriptors are listed with the other accepted forms in
 [scheduling.md](scheduling.md).
 
+## seconds.toml
+
+A schedule does not have to wait for the minute: an expression may state the
+seconds as well, by carrying them in front of the five fields the usual one has.
+
+| Job | Schedule | Time |
+| --- | -------- | ---- |
+| `heartbeat` | `*/10 * * * * *` | Every ten seconds. |
+| `poller` | `0,30 * * * * *` | At :00 and :30 of every minute. |
+
+What a five-field expression leaves unsaid is zero, and that is why the schedules
+of every other example run on the minute. The seconds are part of the instant the
+job runs at, so they show up in the NEXT column as well:
+
+```console
+$ cronx list --config examples/configs/seconds.toml
+JOB        SCHEDULE        NEXT
+heartbeat  */10 * * * * *  2026-10-09 21:16:40 CEST
+poller     0,30 * * * * *  2026-10-09 21:17:00 CEST
+```
+
+A job that fires this often is judged by its overlap policy every time it fires,
+which is worth remembering for one that takes longer than the interval; see
+[scheduling.md](scheduling.md).
+
 ## broken.toml
 
 Every mistake in the file is marked by the comment stating what cronx says about
@@ -160,10 +186,10 @@ it, and one run reports all of them at once:
 $ cronx validate --config examples/configs/broken.toml
 cronx: invalid configuration: scheduler.max_parallel_jobs must be at least 1, got 0
 logging.level "verbose" is not one of debug, error, info, warn
-job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, got 4
+job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, or 6 with the seconds field first, got 4
 job "backup": command "backup" must be an absolute path
 job "backup": retry must not be negative, got -1
-job "cleanup": schedule is not valid: cron expression "@every-minute" is not a known descriptor: use one of @yearly, @monthly, @weekly, @daily, @midnight, @hourly
+job "cleanup": schedule is not valid: cron expression "@every-minute" is not a known descriptor: use one of @yearly, @monthly, @weekly, @daily, @midnight, @hourly, @reboot
 job "cleanup": overlap "sometimes" is not one of skip, allow, queue
 job "cleanup": timeout "30 minutes" is not a valid duration
 job "report": schedule is required

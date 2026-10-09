@@ -115,7 +115,7 @@ configuration keys, so it is a `MINOR`.
 - [x] The `@`-descriptors that stand for a fixed time: `@yearly`, `@monthly`,
   `@weekly`, `@daily`, `@midnight` and `@hourly` (D41).
 - [x] `@reboot`, to run a job once when the scheduler starts (D42).
-- [ ] An optional seconds field, for a six-field expression (D19).
+- [x] An optional seconds field, for a six-field expression (D43).
 - [ ] The `L`, `W` and `#` day operators (D19).
 - [ ] Optional catch-up of runs missed while the scheduler was stopped, which
   today are skipped (D21).

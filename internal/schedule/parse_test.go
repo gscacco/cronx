@@ -21,6 +21,8 @@ func TestParseAcceptsValidExpressions(t *testing.T) {
 		"0 0 29 2 *",
 		"59 23 31 12 6",
 		"0 0 1 JAN *",
+		"*/5 * * * * *",
+		"0 30 2 * * mon-fri",
 		"@daily",
 		"@MIDNIGHT",
 	}
@@ -45,7 +47,7 @@ func TestParseRejectsInvalidExpressions(t *testing.T) {
 	}{
 		{"empty", ""},
 		{"too few fields", "* * * *"},
-		{"too many fields", "* * * * * *"},
+		{"too many fields", "* * * * * * *"},
 		{"minute out of range", "60 * * * *"},
 		{"hour out of range", "* 24 * * *"},
 		{"day of month zero", "* * 0 * *"},

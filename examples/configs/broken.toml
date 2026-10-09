@@ -14,7 +14,7 @@ max_parallel_jobs = 0               # must be at least 1
 level = "verbose"                   # must be debug, info, warn or error
 
 [jobs.backup]
-schedule = "0 3 * *"                # a five-field expression is required
+schedule = "0 3 * *"                # five fields are required, or six with the seconds field first
 command = "backup"                  # must be an absolute path
 retry = -1                          # must not be negative
 

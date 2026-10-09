@@ -19,6 +19,9 @@ type fieldSpec struct {
 }
 
 var (
+	// secondField is the optional field: a six-field expression carries it in
+	// front of the five the others make up.
+	secondField = fieldSpec{name: "second", min: 0, max: 59}
 	minuteField = fieldSpec{name: "minute", min: 0, max: 59}
 	hourField   = fieldSpec{name: "hour", min: 0, max: 23}
 

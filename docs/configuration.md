@@ -165,7 +165,7 @@ The job name is the TOML table key. It must match `[A-Za-z0-9_-]+`.
 
 | Field               | Type              | Default  | Notes |
 | ------------------- | ----------------- | -------- | ----- |
-| `schedule`          | string            | -        | Required. A cron expression: five fields, or a descriptor such as `@daily` (see `docs/scheduling.md`). |
+| `schedule`          | string            | -        | Required. A cron expression: five fields, six with the seconds field in front of them, or a descriptor such as `@daily` (see `docs/scheduling.md`). |
 | `command`           | string            | -        | Required. Absolute path of the executable. |
 | `args`              | array of strings  | `[]`     | Passed to the executable verbatim. |
 | `timeout`           | string (duration) | none     | Go duration (for example `30m`, `1h30m`). Negative values are rejected. |
@@ -220,7 +220,7 @@ Example of explicit failure, using the deliberately invalid
 $ cronx validate --config examples/configs/broken.toml
 cronx: invalid configuration: scheduler.max_parallel_jobs must be at least 1, got 0
 logging.level "verbose" is not one of debug, error, info, warn
-job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, got 4
+job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, or 6 with the seconds field first, got 4
 job "backup": command "backup" must be an absolute path
 ...
 ```
