@@ -64,6 +64,17 @@ var referenceExamples = []struct {
 			{name: "vacuum", schedule: "0 4 * * 0"},
 		},
 	},
+	{
+		file: "descriptors.toml",
+		jobs: []referenceJob{
+			{name: "yearly", schedule: "@yearly"},
+			{name: "monthly", schedule: "@monthly"},
+			{name: "weekly", schedule: "@weekly"},
+			{name: "daily", schedule: "@daily"},
+			{name: "midnight", schedule: "@midnight"},
+			{name: "hourly", schedule: "@hourly"},
+		},
+	},
 }
 
 // examplePath returns the path of a reference configuration.
@@ -86,10 +97,17 @@ func listRow(t *testing.T, output, job string) []string {
 
 // listColumns splits a row of "list" into the schedule and the next activation,
 // which is either an instant, shown as a date, a time and a zone, or a single
-// dash for a job that never runs.
+// dash for a job that never runs. A schedule is five fields, or one descriptor,
+// which is one field on its own.
 func listColumns(t *testing.T, fields []string) (schedule, next string) {
 	t.Helper()
-	const scheduleFields = 5
+	scheduleFields := 5
+	if len(fields) > 1 && strings.HasPrefix(fields[1], "@") {
+		scheduleFields = 1
+	}
+	if len(fields) < 1+scheduleFields {
+		t.Fatalf("list row = %v, want a job and a schedule", fields)
+	}
 	schedule = strings.Join(fields[1:1+scheduleFields], " ")
 
 	switch len(fields) {
@@ -98,7 +116,7 @@ func listColumns(t *testing.T, fields []string) (schedule, next string) {
 	case 1 + scheduleFields + 1:
 		return schedule, fields[1+scheduleFields]
 	default:
-		t.Fatalf("list row = %v, want a job, a five-field schedule and an instant or a dash",
+		t.Fatalf("list row = %v, want a job, a schedule and an instant or a dash",
 			fields)
 		return "", ""
 	}

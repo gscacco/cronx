@@ -19,7 +19,7 @@ command = "backup"                  # must be an absolute path
 retry = -1                          # must not be negative
 
 [jobs.cleanup]
-schedule = "@daily"                 # the @ shortcuts are not supported
+schedule = "@every-minute"          # not a descriptor cronx knows
 command = "/usr/local/bin/cleanup"
 overlap = "sometimes"               # must be skip, allow or queue
 timeout = "30 minutes"              # must be a duration such as 30m
