@@ -63,6 +63,9 @@ Implemented:
 - **Logs.** Every run appends to one run log, whose lines carry the time, the
   job, the run and the pid, plus the scheduler's own log file; both readable
   only by their owner.
+- **A log that does not grow without bound.** `[logging].max_size` rotates the
+  run log once it would pass a size, and `[logging].max_backups` says how many
+  rotated files are kept. Without a size the log simply grows.
 - **Reading the log back.** `cronx logs [job]` prints the run log, so the output
   of a run can be read without knowing where the file is: a job name selects one
   job, `--since` leaves out what is older, and `--follow` keeps printing as the
@@ -253,8 +256,10 @@ The run log and the status database can be moved with `[logging].path` and
 `[storage].path`; see [Configuration](docs/configuration.md). `cronx logs` reads
 the run log back — `cronx logs backup`, `cronx logs --since 1h --follow` — and
 the other files can be read directly, with `cat` or
-`sqlite3 ~/.cronx/state.db`. The logs are appended to, no log is ever rotated
-automatically, and only their owner can read them.
+`sqlite3 ~/.cronx/state.db`. The run log is rotated once it would pass
+`[logging].max_size`, keeping the last `[logging].max_backups` files as
+`runs.log.1`, `runs.log.2` and so on; nothing is rotated unless a size is
+configured. Only their owner can read the files.
 
 > Every command, its output and its exit status are described in
 > [Command line](docs/cli.md).

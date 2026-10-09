@@ -25,6 +25,9 @@ const (
 	DefaultTimezone        = "Local"
 	DefaultMaxParallelJobs = 1
 	DefaultLoggingLevel    = "info"
+	// DefaultLogBackups is how many rotated run logs are kept when a maximum
+	// size is configured without a number of backups.
+	DefaultLogBackups = 3
 )
 
 // Directory and file names, relative to the user's home directory: the default
@@ -66,6 +69,12 @@ type Logging struct {
 	// by all runs. Empty means the default under the home directory, resolved
 	// by LogPath.
 	Path string
+	// MaxSize is how many bytes the run log may reach before it is rotated.
+	// Zero means it is never rotated and grows without bound.
+	MaxSize int64
+	// MaxBackups is how many rotated run logs are kept, the newest first, once
+	// rotation is on. It is zero only when rotation is off.
+	MaxBackups int
 }
 
 // Storage holds where cronx keeps what it writes.
@@ -188,6 +197,29 @@ func Parse(data []byte) (*Config, error) {
 				raw.Logging.Level, strings.Join(sortedKeys(validLoggingLevels), ", ")))
 		} else {
 			cfg.Logging.Level = raw.Logging.Level
+		}
+	}
+
+	if raw.Logging.MaxSize != "" {
+		size, err := parseSize(raw.Logging.MaxSize)
+		if err != nil {
+			problems = append(problems, fmt.Errorf("logging.max_size %q is not a size: %w",
+				raw.Logging.MaxSize, err))
+		} else {
+			cfg.Logging.MaxSize = size
+			cfg.Logging.MaxBackups = DefaultLogBackups
+		}
+	}
+	if raw.Logging.MaxBackups != nil {
+		switch {
+		case raw.Logging.MaxSize == "":
+			problems = append(problems, fmt.Errorf(
+				"logging.max_backups needs logging.max_size: without a size no log is rotated"))
+		case *raw.Logging.MaxBackups < 1:
+			problems = append(problems, fmt.Errorf(
+				"logging.max_backups must be at least 1, got %d", *raw.Logging.MaxBackups))
+		default:
+			cfg.Logging.MaxBackups = *raw.Logging.MaxBackups
 		}
 	}
 

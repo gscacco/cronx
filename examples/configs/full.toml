@@ -16,6 +16,8 @@ max_parallel_jobs = 2               # at most two jobs running at the same time
 
 [logging]
 level = "debug"                     # debug | info | warn | error
+max_size = "10MB"                   # rotate the run log once it would pass this size
+max_backups = 3                     # keep the three most recent rotated run logs
 
 # A long job that must not overlap with itself: a trigger arriving while the
 # previous run is still going is recorded as skipped. It is retried twice

@@ -67,11 +67,16 @@ max_parallel_jobs = 2               # at most two jobs running at the same time
 
 [logging]
 level = "debug"                     # debug | info | warn | error
+max_size = "10MB"                   # rotate the run log once it would pass this size
+max_backups = 3                     # keep the three most recent rotated run logs
 ```
 
 The optional `[logging] path` and `[storage] path`, which move the run log and
 the status database, are described in [configuration.md](configuration.md); they
-are left out of the examples so that the files read exactly as they are.
+are left out of the examples so that the files read exactly as they are. The two
+rotation settings are used here, since they change nothing about where cronx
+writes: `max_size` rotates the run log once it would pass ten megabytes, and
+`max_backups` keeps the three most recent rotated files.
 
 and then uses every per-job field at least once:
 

@@ -139,7 +139,7 @@ func buildInternalScheduler(t *testing.T, parallel int, definitions ...job.Job) 
 	t.Cleanup(func() { _ = persistent.Close() })
 
 	clk := clock.System{}
-	runs := logx.Open(filepath.Join(t.TempDir(), "logs", "runs.log"), clk)
+	runs := logx.Open(filepath.Join(t.TempDir(), "logs", "runs.log"), clk, logx.Rotation{})
 	t.Cleanup(func() { _ = runs.Close() })
 
 	logger, err := logx.NewLogger(io.Discard, "error")

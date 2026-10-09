@@ -95,8 +95,10 @@ scheduler refuses to start — so the release is a `MINOR`.
 
 - [x] `cronx logs [job] [--follow] [--since]`, so the run log can be read
   without knowing its path ([testing.md](testing.md), D36).
-- [ ] Rotation and retention for the logs, and pruning for the history, since no
-  log is rotated today and the database grows without bound ([cli.md](cli.md)).
+- [x] Rotation and retention for the logs: `[logging].max_size` and
+  `[logging].max_backups` keep the run log from growing without bound
+  ([cli.md](cli.md), D37).
+- [ ] Pruning for the history, so that the database stops growing without bound.
 - [ ] Reload the configuration on `SIGHUP`, so a change does not need a restart.
 
 ### 0.5.0 — cron expressiveness

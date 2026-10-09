@@ -1,0 +1,15 @@
+# Configuration for a run log that is rotated, so that a job which prints a
+# great deal cannot fill the disk.
+#
+# The maximum size is smaller than two lines, so that every second run starts a
+# new file. A test can then count what was kept, and which run wrote it, without
+# waiting for a real log to grow.
+
+[logging]
+max_size = "100B"
+max_backups = 2
+
+[jobs.talker]
+schedule = "0 3 * * *"
+command = "@JOB_HELPER@"
+args = ["out", "printed by the job"]

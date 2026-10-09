@@ -65,11 +65,11 @@ func newLogsCommand(configPath *string) *cobra.Command {
 
 			out := cmd.OutOrStdout()
 			filter := lineFilter{job: name, since: cutoff}
-			offset, err := printRunLog(out, logPath, filter)
+			offset, read, err := printRunLog(out, logPath, filter)
 			if err != nil || !follow {
 				return err
 			}
-			return followRunLog(cmd.Context(), out, logPath, offset, filter)
+			return followRunLog(cmd.Context(), out, logPath, offset, read, filter)
 		},
 	}
 
@@ -118,19 +118,30 @@ func parseSince(value string, now time.Time) (time.Time, error) {
 	return instant, nil
 }
 
-// printRunLog prints the lines of the run log the filter selects and returns how
-// much of the file was read, so that a follower knows where to continue. A log
-// that does not exist yet is not an error: it holds no line.
-func printRunLog(out io.Writer, path string, filter lineFilter) (int64, error) {
-	content, err := os.ReadFile(path)
+// printRunLog prints the lines of the run log the filter selects and returns
+// how much of the file was read and which file it was, so that a follower can
+// tell an append from a rotation. A log that does not exist yet is not an
+// error: it holds no line.
+func printRunLog(out io.Writer, path string, filter lineFilter) (int64, os.FileInfo, error) {
+	file, err := os.Open(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return 0, nil
+			return 0, nil, nil
 		}
-		return 0, fmt.Errorf("reading the run log %s: %w", path, err)
+		return 0, nil, fmt.Errorf("reading the run log %s: %w", path, err)
+	}
+	defer func() { _ = file.Close() }()
+
+	info, err := file.Stat()
+	if err != nil {
+		return 0, nil, fmt.Errorf("reading the run log %s: %w", path, err)
+	}
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return 0, nil, fmt.Errorf("reading the run log %s: %w", path, err)
 	}
 	printLines(out, content, filter)
-	return int64(len(content)), nil
+	return int64(len(content)), info, nil
 }
 
 // printLines prints the complete lines of a block of log text that the filter
@@ -155,7 +166,12 @@ func printLines(out io.Writer, content []byte, filter lineFilter) []byte {
 
 // followRunLog keeps printing the lines appended to the run log until the
 // command is stopped. The offset is how much of the file was already read.
-func followRunLog(ctx context.Context, out io.Writer, path string, offset int64, filter lineFilter) error {
+//
+// A log that is rotated — renamed away and replaced by an empty file — is
+// recognised by comparing the file at the path with the one that was read
+// before, and reading starts again from the beginning of the new one, so that
+// what is written after a rotation is printed too.
+func followRunLog(ctx context.Context, out io.Writer, path string, offset int64, read os.FileInfo, filter lineFilter) error {
 	var pending []byte
 
 	ticker := time.NewTicker(followInterval)
@@ -175,11 +191,17 @@ func followRunLog(ctx context.Context, out io.Writer, path string, offset int64,
 			}
 			return fmt.Errorf("reading the run log %s: %w", path, err)
 		}
-		if info.Size() < offset {
-			// The log was replaced by a shorter one: read it again.
+		switch {
+		case read == nil || !os.SameFile(read, info):
+			// The log was created or replaced by a new one.
+			offset = 0
+			pending = nil
+		case info.Size() < offset:
+			// The file was made shorter in place.
 			offset = 0
 			pending = nil
 		}
+		read = info
 		if info.Size() == offset {
 			continue
 		}
