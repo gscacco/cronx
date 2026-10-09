@@ -1,0 +1,12 @@
+# A configuration that is deliberately unusable, to check that a reload which
+# cannot be applied is refused and the scheduler keeps running with the
+# configuration it has.
+
+[jobs.steady]
+schedule = "0 0 31 4 *"
+command = "@JOB_HELPER@"
+args = ["out", "steady"]
+
+[jobs.second]
+schedule = "not a cron expression"
+command = "@JOB_HELPER@"

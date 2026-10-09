@@ -1,0 +1,12 @@
+# The configuration of reload.toml once a job has been added to it: what a
+# scheduler is expected to pick up when it is sent SIGHUP.
+
+[jobs.steady]
+schedule = "0 0 31 4 *"
+command = "@JOB_HELPER@"
+args = ["out", "steady"]
+
+[jobs.second]
+schedule = "0 0 31 4 *"
+command = "@JOB_HELPER@"
+args = ["out", "second"]
