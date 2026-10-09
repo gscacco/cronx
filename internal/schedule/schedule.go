@@ -4,8 +4,9 @@
 // fields (minute, hour, day of month, month, day of week), the operators "*",
 // ranges "a-b", lists "a,b" and the steps "*/n" and "a-b/n", the three-letter
 // month and day names, and the descriptors "@yearly", "@monthly", "@weekly",
-// "@daily", "@midnight" and "@hourly", which stand for a fixed time. A seconds
-// field and the non-standard "L", "W" and "#" operators are not supported.
+// "@daily", "@midnight" and "@hourly", which stand for a fixed time, together
+// with "@reboot", which runs the job when the scheduler starts. A seconds field
+// and the non-standard "L", "W" and "#" operators are not supported.
 //
 // When both the day-of-month and the day-of-week fields are restricted, a day
 // matches if either of them matches, following the traditional cron behaviour.
@@ -39,11 +40,22 @@ type Schedule struct {
 	// domStar and dowStar record whether the field was written as "*".
 	domStar bool
 	dowStar bool
+	// startup records that the schedule is triggered by the scheduler
+	// starting rather than by the clock: it is "@reboot", which has no
+	// activation to compute.
+	startup bool
 }
 
 // String returns the expression the Schedule was parsed from.
 func (s Schedule) String() string {
 	return s.expression
+}
+
+// RunsAtStartup reports whether the schedule is triggered by the scheduler
+// starting rather than by the clock, which is what the "@reboot" descriptor
+// means and the only way to ask for it.
+func (s Schedule) RunsAtStartup() bool {
+	return s.startup
 }
 
 // Parse parses a cron expression: five fields, or one of the descriptors that
@@ -90,8 +102,14 @@ func parseFields(written, expression string) (Schedule, error) {
 // Next returns the first activation strictly after the given time, expressed in
 // the location of that time. The boolean is false when the expression has no
 // activation within the search horizon, for example "0 0 31 4 *", which can
-// never match because April has no 31st day.
+// never match because April has no 31st day, and for a schedule that runs when
+// the scheduler starts rather than on the clock, which has no activation to
+// compute at all.
 func (s Schedule) Next(after time.Time) (time.Time, bool) {
+	if s.startup {
+		return time.Time{}, false
+	}
+
 	// The first candidate is the start of the following minute.
 	candidate := time.Date(
 		after.Year(), after.Month(), after.Day(),
