@@ -1,4 +1,3 @@
-```yaml
 name: Release
 
 on:
@@ -54,4 +53,3 @@ jobs:
           gh release upload "$GITHUB_REF_NAME" \
             dist/*.zip dist/*.tar.gz \
             --clobber
-```
