@@ -75,6 +75,38 @@ func (s *Store) InterruptStaleRuns(ctx context.Context, at time.Time) (int64, er
 	return interrupted, nil
 }
 
+// PruneRuns deletes the runs of a job beyond the newest keep, so that a history
+// nobody reads does not grow without bound. It returns how many runs were
+// deleted.
+//
+// Runs that are still in progress are never deleted, whatever their age: they
+// are not history yet, and the scheduler that started them still has to record
+// their outcome. A keep of zero or less deletes nothing, so that a caller which
+// was given no limit cannot empty a history by mistake.
+func (s *Store) PruneRuns(ctx context.Context, jobName string, keep int) (int64, error) {
+	if keep < 1 {
+		return 0, nil
+	}
+
+	result, err := s.db.ExecContext(ctx, `
+		DELETE FROM runs
+		 WHERE id IN (
+			SELECT id FROM runs
+			 WHERE job = ? AND status <> ?
+			 ORDER BY id DESC
+			 LIMIT -1 OFFSET ?)`,
+		jobName, string(job.StatusRunning), keep)
+	if err != nil {
+		return 0, fmt.Errorf("pruning the history of job %q: %w", jobName, err)
+	}
+
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("counting the runs pruned from job %q: %w", jobName, err)
+	}
+	return deleted, nil
+}
+
 // scanner is implemented by both *sql.Row and *sql.Rows.
 type scanner interface {
 	Scan(dest ...any) error
