@@ -28,6 +28,13 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
   for a job, so that a scheduler left running for months does not grow the
   database without bound either. A run still in progress is never deleted, and
   without the key every run is kept (D38).
+- A running scheduler reloads its configuration when it is sent `SIGHUP`: the
+  jobs of the file that is read replace the ones being run, so a job that was
+  added, removed or rescheduled takes effect without a restart. A file that
+  cannot be read or used is refused and reported, and the running configuration
+  is kept. A change to `[scheduler]`, `[logging] path` and its rotation, or
+  `[storage] path` and `max_runs` is reported and ignored, because what reads it
+  was built when the scheduler started: it needs a restart (D39).
 
 ## [0.3.0] - 2026-10-09
 
