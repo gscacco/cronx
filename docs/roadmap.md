@@ -89,21 +89,23 @@ scheduler refuses to start — so the release is a `MINOR`.
 - The grace period between `SIGTERM` and `SIGKILL` is configurable per job:
   `grace_period`.
 
+### 0.4.0 — 2026-10-09
+
+Operability: what cronx writes can now be read back and bounded, and a change to
+the configuration no longer needs a restart. The release adds a command and three
+configuration keys, so it is a `MINOR`.
+
+- `cronx logs [job] [--follow] [--since]` reads the run log, so the output of a
+  run can be reached without knowing where the file is (D36).
+- The run log is rotated once it would pass `[logging].max_size`, keeping
+  `[logging].max_backups` of the rotated files (D37).
+- The history is pruned to the newest `[storage].max_runs` runs of each job,
+  when the scheduler starts and whenever a job runs (D38).
+- A running scheduler reloads its configuration on `SIGHUP`: the jobs of the
+  file take effect at once, while a change to a setting of the scheduler itself
+  is reported and needs a restart (D39).
+
 ## Planned
-
-### 0.4.0 — operability: logs and data
-
-- [x] `cronx logs [job] [--follow] [--since]`, so the run log can be read
-  without knowing its path ([testing.md](testing.md), D36).
-- [x] Rotation and retention for the logs: `[logging].max_size` and
-  `[logging].max_backups` keep the run log from growing without bound
-  ([cli.md](cli.md), D37).
-- [x] Pruning for the history: `[storage].max_runs` keeps the newest runs of
-  each job and deletes the rest, so that the database stops growing without
-  bound (D38).
-- [x] Reload the configuration on `SIGHUP`, so a change does not need a restart:
-  the jobs of the new file take effect at once, while a change to a setting of
-  the scheduler itself is reported and needs one (D39).
 
 ### 0.5.0 — cron expressiveness
 
