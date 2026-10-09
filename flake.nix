@@ -38,7 +38,7 @@
       packages = forAllSystems (system: pkgs: {
         default = pkgs.buildGoModule {
           pname = "cronx";
-          version = "0.3.0-dev";
+          version = "0.4.0";
           src = ./.;
           # Hash of the vendored Go dependencies. Update it whenever the
           # dependency set changes (Nix reports the expected value on mismatch).
