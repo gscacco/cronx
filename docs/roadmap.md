@@ -107,8 +107,11 @@ configuration keys, so it is a `MINOR`.
 
 ## Planned
 
-### 0.5.0 — cron expressiveness
+### 0.5.0 — cron expressiveness and a configuration to start from
 
+- [x] `cronx init`, to write a configuration file that documents itself: the
+  fields one job needs are set, and every other option is commented out with
+  what it does and what happens without it (D40).
 - [ ] `@`-descriptors: `@yearly`, `@monthly`, `@weekly`, `@daily`, `@hourly`,
   `@midnight` and `@reboot` (D19).
 - [ ] An optional seconds field, for a six-field expression (D19).
@@ -160,7 +163,7 @@ Every release, whatever its number:
 | 0.2.0 | One shared run log, `[logging].path` and `[storage].path`, and three small state fixes. |
 | 0.3.0 | The configured timezone, one scheduler per state, the overlap decision, a configurable grace period. |
 | 0.4.0 | `cronx logs`, log rotation and history retention, reload on `SIGHUP`. |
-| 0.5.0 | `@`-descriptors, a seconds field, `L`/`W`/`#`, catch-up, `enabled = false`. |
+| 0.5.0 | `cronx init`, `@`-descriptors, a seconds field, `L`/`W`/`#`, catch-up, `enabled = false`. |
 | 0.6.0 | `--json`, `CRONX_LOG`/`CRONX_STATE`, on-failure actions, `cronx doctor`. |
 | 0.7.0 | `cronx service install` for `systemd` and `launchd`. |
 | 1.0.0 | The frozen schema and command line, and the compatibility promise. |

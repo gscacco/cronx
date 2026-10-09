@@ -8,6 +8,17 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 
 ## [Unreleased]
 
+### Added
+
+- `cronx init`, to write a configuration file to start from: one job, with the
+  fields it needs, and every other option cronx knows written next to it
+  commented out, with what it does and what happens without it, so that the file
+  is also its own reference. The file is written where `--config`,
+  `CRONX_CONFIG` or the home directory points, its directory is created with
+  `0700` and the file with `0600`. A configuration that is already there is never
+  replaced — the command stops and names the file — unless `--force` is given,
+  and nothing else is touched: no state is opened and no log is created (D40).
+
 ## [0.4.0] - 2026-10-09
 
 ### Added

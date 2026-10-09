@@ -12,6 +12,7 @@ under `~/.cronx/` unless the configuration moves them; see
 
 | Command | Purpose |
 | ------- | ------- |
+| `init` | Write a configuration file to start from, with every other option commented out. |
 | `validate` | Check the configuration file and report every problem it finds. |
 | `list` | Show the configured jobs, their schedule and when each runs next. |
 | `status` | Show the last outcome of every job and whether a run is in progress. |
@@ -21,12 +22,44 @@ under `~/.cronx/` unless the configuration moves them; see
 | `run` | Run the scheduler in the foreground until it is stopped. |
 | `version` | Print the version of cronx. |
 
-Every command below can be tried against the configuration files kept in
+Every command that reads the configuration can be tried against the files kept in
 [`examples/configs/`](../examples/configs/), which are described one by one in
 [examples.md](examples.md).
 
 The exit status is `0` on success and `1` on failure. `run-once` fails when the
 job did not succeed, so it can be used in scripts.
+
+## init
+
+```console
+$ cronx init
+/home/user/.cronx/config.toml written
+```
+
+The file is written where the configuration is looked for, and the directory it
+lives in is created if it is not there yet. It holds one job — the smallest one
+worth having, with its schedule, its command and the arguments of the command —
+and every other option cronx knows, commented out with what it does and what
+happens without it, so that the file can be read as its own reference:
+
+```toml
+[scheduler]
+# timezone = "Local"            # an IANA name such as "Europe/Rome", or "Local" for the zone of the machine
+# max_parallel_jobs = 1         # how many jobs may run at the same time
+
+[jobs.hello]
+schedule = "*/5 * * * *"        # a five-field cron expression: every five minutes
+command = "/bin/echo"           # required, an absolute path: cronx never looks a command up in PATH
+args = ["hello from cronx"]     # passed to the program as they are, never through a shell
+# timeout = "30m"               # stop it, and the processes it started, after this long (default: no timeout)
+# ...
+```
+
+The file gets the permissions of everything else cronx writes: `0700` for the
+directory and `0600` for the file. A configuration that is already there is never
+replaced — the command stops, names the file and leaves it as it was — unless
+`--force` is given. Nothing else happens: no state is opened and no log is
+created, so the command can be run before there is an installation at all.
 
 ## validate
 

@@ -13,6 +13,12 @@ The configuration path is resolved in this order:
 2. the `CRONX_CONFIG` environment variable;
 3. the default `~/.cronx/config.toml`.
 
+`cronx init` writes a file there when there is not one yet: the smallest
+configuration cronx accepts, with every other option commented out and
+explained, so that the file doubles as a reference. It refuses to replace a file
+that already exists unless it is given `--force`, and it writes nothing else.
+See [cli.md](cli.md) for the command.
+
 ## Applying a change
 
 A running scheduler reads the file again whenever it is sent `SIGHUP`, so a job
