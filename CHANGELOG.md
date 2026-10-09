@@ -16,6 +16,13 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
   before an RFC 3339 instant, and `--follow` keeps printing as the log grows. The
   command reads the log and nothing else: it opens no state, writes nothing and
   creates nothing (D36).
+- The run log is rotated once it would pass `[logging].max_size`: the file is
+  renamed to `runs.log.1`, the files before it move one step back, and at most
+  `[logging].max_backups` of them are kept, three unless the configuration says
+  otherwise. A size is written as a number of bytes or with a `KB`, `MB` or `GB`
+  suffix. Without a size nothing is rotated and the log grows as before, and no
+  log is rotated before its first line, so a line larger than the limit is kept
+  rather than dropped (D37).
 
 ## [0.3.0] - 2026-10-09
 

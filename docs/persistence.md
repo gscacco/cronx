@@ -18,6 +18,11 @@ The status database and the run log can be moved out of the home directory with
 `[storage].path` and `[logging].path`; see [configuration.md](configuration.md).
 Every run of every job appends to the same run log.
 
+The run log is rotated when `[logging].max_size` is configured: what it held
+becomes `runs.log.1`, the file before it `runs.log.2` and so on, up to
+`[logging].max_backups` of them. The history is unaffected: the `log_path` of a
+run names the run log, whose rotated files are its neighbours on disk.
+
 The database file and its directory are created automatically when needed, with
 owner-only permissions. The connection enables the write-ahead log, a five
 second busy timeout and foreign keys.
