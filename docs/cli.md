@@ -97,6 +97,10 @@ Each row is one attempt. The `DURATION` is how long the process ran and `EXIT`
 is its exit status, shown as a dash when no process ran, as for a run skipped by
 the overlap policy.
 
+The history is trimmed to the newest `[storage] max_runs` runs of each job when
+that is configured, so it does not grow without bound; see
+[persistence.md](persistence.md). Without it the history keeps every run.
+
 ## logs
 
 ```console

@@ -60,6 +60,9 @@ Implemented:
 - **Execution history.** One row per attempt in a local SQLite database, with its
   status, start time, duration, exit code and the log it wrote to, readable
   through `cronx history` and `cronx status`.
+- **A history that does not grow without bound.** `[storage].max_runs` keeps the
+  newest runs of every job and deletes the rest, when the scheduler starts and
+  whenever a job runs.
 - **Logs.** Every run appends to one run log, whose lines carry the time, the
   job, the run and the pid, plus the scheduler's own log file; both readable
   only by their owner.

@@ -90,6 +90,24 @@ between two renewals. `cronx status` reports the lease, if there is one.
 
 `scheduled` and `running` are the two non-final states.
 
+## Retention
+
+The database keeps what happened, and nothing else prunes it by default: without
+`[storage].max_runs` every attempt of every job stays in the history for ever.
+With it, the scheduler keeps the newest `max_runs` runs **of each job** and
+deletes the ones beyond them.
+
+The trimming happens when the scheduler starts, for every job, and again each
+time a trigger arrives for a job, so that a scheduler left running for months
+bounds the database as well as one that is restarted. The count is per job, so a
+job that runs every minute cannot push the rare runs of another job out.
+
+Two things are never deleted. A run that is still in progress is not history
+yet, and the scheduler that started it still has to record its outcome, so it is
+kept whatever its age. The `job_state` row of each job is not part of the
+history either: it holds only the last outcome of the job and is what
+`cronx status` reads.
+
 ## Time
 
 Timestamps are stored in UTC, as RFC 3339, so that the database is unambiguous
