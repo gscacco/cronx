@@ -65,12 +65,17 @@ func TestTheSchedulerPrunesTheHistoryWhenItStarts(t *testing.T) {
 	}
 }
 
-func TestTheSchedulerPrunesTheHistoryOfAJobThatRuns(t *testing.T) {
+func TestTheSchedulerPrunesTheHistoryWhenATriggerArrives(t *testing.T) {
 	// SETUP: a history longer than the configuration keeps, and a job that is
-	// due now.
+	// due now. Its overlap policy has it skip while a run of its own is in
+	// progress, which the test holds, so the trigger is recorded without a
+	// process being started and nothing has to be waited for.
 	definition := internalJob(t, "backup", job.OverlapSkip)
 	subject, persistent := buildInternalSchedulerWith(t, config.Storage{MaxRuns: 2}, 1, definition)
 	ids := seedInternalRuns(t, persistent, definition.Name, 5)
+
+	subject.locks[definition.Name].Lock()
+	defer subject.locks[definition.Name].Unlock()
 
 	// EXERCISE: a trigger arrives.
 	at := time.Now()
@@ -78,7 +83,7 @@ func TestTheSchedulerPrunesTheHistoryOfAJobThatRuns(t *testing.T) {
 	subject.dispatch(context.Background(), at)
 
 	// VERIFY: the runs the configuration does not keep are gone, whichever
-	// run the trigger itself is adding.
+	// run the trigger itself recorded.
 	for _, run := range runsOf(t, persistent, definition.Name) {
 		if run.ID <= ids[2] {
 			t.Errorf("run %d is still in the history, want it pruned: the configuration keeps the newest two",
