@@ -255,6 +255,47 @@ command = "/usr/local/bin/backup"
 	}
 }
 
+func TestLogsKeepsFollowingAfterTheLogIsRotated(t *testing.T) {
+	// SETUP
+	home := newTestHome(t)
+	path := writeTestConfig(t, home, twoJobs)
+	logPath := runLogPath(home)
+	writeRunLog(t, logPath, "2026-01-02T03:00:00Z backup id=1 pid=10 before the rotation")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	output := &synchronizedBuffer{}
+	command := cli.NewRootCommand()
+	command.SetOut(output)
+	command.SetErr(output)
+	command.SetContext(ctx)
+	command.SetArgs([]string{"logs", "--follow", "--config", path})
+
+	finished := make(chan error, 1)
+	go func() { finished <- command.Execute() }()
+	waitForOutput(t, output, "before the rotation")
+
+	// EXERCISE: the log is rotated, which moves what was written away and
+	// leaves a new, empty file in its place.
+	if err := os.Rename(logPath, logPath+".1"); err != nil {
+		t.Fatalf("rotating the run log: %v", err)
+	}
+	appendToRunLog(t, logPath, "2026-01-02T04:00:00Z cleanup id=2 pid=20 after the rotation")
+
+	// VERIFY: the line written after the rotation is printed as well.
+	waitForOutput(t, output, "after the rotation")
+	cancel()
+	select {
+	case err := <-finished:
+		if err != nil {
+			t.Fatalf("logs returned an unexpected error: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatalf("logs did not stop when the command was interrupted\noutput:\n%s", output.String())
+	}
+}
+
 func TestLogsFollowsTheLog(t *testing.T) {
 	// SETUP
 	home := newTestHome(t)
