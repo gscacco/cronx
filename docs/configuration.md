@@ -20,12 +20,12 @@ that was added, removed or rescheduled takes effect without a restart. The jobs
 are applied whole and at once; the reload is refused if the file cannot be read
 or used, and the scheduler then keeps running with the configuration it had.
 
-Four groups of settings cannot be applied to a process that is already running,
-because what reads them was built when it started: `[scheduler]` (the timezone
-and the parallel limit), `[logging] path` and its rotation, and `[storage] path`
-and `max_runs`. A reload reports each of them that changed and ignores it; a
-restart is what applies them. See [cli.md](cli.md) for how the reload is asked
-for and recorded.
+Not every setting can be applied to a process that is already running, because
+what reads it was built when the scheduler started. They are the whole
+`[scheduler]` table, the `path`, `max_size` and `max_backups` of `[logging]`, and
+the `path` and `max_runs` of `[storage]`. A reload reports each of them that has
+changed and ignores it; a restart is what applies them. See [cli.md](cli.md) for
+how the reload is asked for and recorded.
 
 ## Reference examples
 
