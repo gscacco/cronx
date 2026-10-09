@@ -2,9 +2,10 @@
 //
 // The supported syntax is deliberately close to traditional Unix cron: five
 // fields (minute, hour, day of month, month, day of week), the operators "*",
-// ranges "a-b", lists "a,b" and the steps "*/n" and "a-b/n", plus the
-// three-letter month and day names. Descriptors such as "@daily", a seconds
-// field and the non-standard "L", "W" and "#" suffixes are not supported.
+// ranges "a-b", lists "a,b" and the steps "*/n" and "a-b/n", the three-letter
+// month and day names, and the descriptors "@yearly", "@monthly", "@weekly",
+// "@daily", "@midnight" and "@hourly", which stand for a fixed time. A seconds
+// field and the non-standard "L", "W" and "#" operators are not supported.
 //
 // When both the day-of-month and the day-of-week fields are restricted, a day
 // matches if either of them matches, following the traditional cron behaviour.
@@ -45,15 +46,26 @@ func (s Schedule) String() string {
 	return s.expression
 }
 
-// Parse parses a five-field cron expression.
+// Parse parses a cron expression: five fields, or one of the descriptors that
+// stands for a fixed time, such as "@daily".
 func Parse(expression string) (Schedule, error) {
+	if isDescriptor(expression) {
+		return parseDescriptor(expression)
+	}
+	return parseFields(expression, expression)
+}
+
+// parseFields parses the five fields of expression. written is the text the
+// caller passed, which the Schedule reports back even when the fields come from
+// a descriptor.
+func parseFields(written, expression string) (Schedule, error) {
 	fields := strings.Fields(expression)
 	if len(fields) != fieldCount {
 		return Schedule{}, fmt.Errorf(
 			"cron expression %q must have %d fields, got %d", expression, fieldCount, len(fields))
 	}
 
-	parsed := Schedule{expression: expression}
+	parsed := Schedule{expression: written}
 	var err error
 
 	if parsed.minutes, _, err = parseField(minuteField, fields[0]); err != nil {
