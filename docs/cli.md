@@ -89,7 +89,10 @@ cleanup */15 * * * *  2026-10-04 21:30:00 CEST
 ```
 
 A job whose expression can never match, such as `0 0 31 4 *`, is shown with a
-dash in the `NEXT` column.
+dash in the `NEXT` column. A job that runs when the scheduler starts, which is
+what `@reboot` asks for, says `at startup` there instead: it is waiting for a
+scheduler that is not running, which is a different thing from a schedule that
+can never match.
 
 The `NEXT` column is a wall clock in the zone of `[scheduler].timezone`: with
 `timezone = "Europe/Rome"` the times above are Rome's, whatever zone the machine

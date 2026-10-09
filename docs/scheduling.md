@@ -39,7 +39,8 @@ the `L`, `W`, `#` and `?` operators.
 
 ## Descriptors
 
-A fixed time can be written as a descriptor instead of as five fields:
+A fixed time — or the start of the scheduler — can be written as a descriptor
+instead of as five fields:
 
 | Descriptor  | Same as     | Time |
 | ----------- | ----------- | ---- |
@@ -49,15 +50,30 @@ A fixed time can be written as a descriptor instead of as five fields:
 | `@daily`    | `0 0 * * *` | midnight every day |
 | `@midnight` | `0 0 * * *` | the same as `@daily` |
 | `@hourly`   | `0 * * * *` | the start of every hour |
+| `@reboot`   | —           | once, when the scheduler starts |
 
 The names are not case-sensitive, and a descriptor is a whole expression:
 `@daily` stands alone, so a field after it is refused rather than guessed at. An
 unknown descriptor is answered with the list of the ones cronx has. `cronx list`
 prints the descriptor a job was written with, not the fields it stands for.
 
-`@reboot` is not among them: cronx has no notion of a machine booting, so a job
-that runs once when the scheduler starts is still on the
-[roadmap](roadmap.md).
+### Running at startup
+
+`@reboot` is the one descriptor that is not a time. It has no activation on the
+clock, so no expression stands behind it and the answer to *when does it run
+next* is not an instant: `cronx list` says `at startup` instead, where a job that
+can never run gets a dash.
+
+The job is run once, when `cronx run` starts — from the configuration it is read
+from at that moment, with the command it then has. A scheduler that is already
+running is not a start, so a reload that adds a job of this kind does not run it:
+the scheduler log says so, and the job waits for the next start. Starting cronx
+twice is two starts, and therefore two runs.
+
+Like every other trigger, this one is judged by the overlap policy of the job and
+counts against `max_parallel_jobs`; runs left in progress by a previous process
+are closed before it, so what the policy sees is the state as the scheduler found
+it.
 
 ## Day of month and day of week
 
@@ -157,5 +173,6 @@ its jobs before it exits.
 | `0 0 13 * fri`        | at midnight on the 13th and on every Friday |
 | `@daily`              | every day at midnight |
 | `@monthly`            | at midnight on the first day of every month |
+| `@reboot`             | once, when the scheduler starts |
 | `30 2 * jan,jul *`    | at 02:30 in January and in July |
 | `0 0 * * 7`           | at midnight on Sundays |
