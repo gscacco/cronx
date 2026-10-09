@@ -41,6 +41,34 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
   job like any other trigger. A schedule with a seconds field does not catch up
   any more than any other: a job that fires every ten seconds is not run thirty
   times to make up for a stop (D43).
+- The `L`, `W` and `#` day operators, in the two day fields they belong to. In the
+  day of month, `L` is the last day of the month, `LW` the last weekday of it and
+  `nW` the weekday nearest to its n-th day; in the day of week, `L` is the last
+  day of the week, which is Saturday, and `nL` and `n#m` are the last and the n-th
+  occurrence of a weekday in the month. An operator is a whole element of the
+  field's list, so it carries neither a range nor a step: `1,15,L` is a list of
+  three days, while `L/2` and `1-L` are refused with the form the field does
+  accept. A month that does not hold the day an operator names — a `31W` in a
+  February of 28 days, or a fifth Saturday — is a month in which the job does not
+  run, and an operator written in any of the other fields is refused with the
+  field that takes it named in the message (D44).
+- Optional catch-up of the runs a job missed while cronx was not running.
+  `catch_up = true` runs the job once when the scheduler starts, if at least one
+  of its activations passed after its last recorded run. The trigger is the start
+  — a reload catches nothing up — and one run covers however many activations
+  were missed, so starting again after a long stop is not a burst of runs. A job
+  that has never run is not caught up, there being no instant to count its missed
+  activations from, and neither is a job whose schedule has no activation on the
+  clock or one that is disabled. The run is judged by the overlap policy of the
+  job, counts against `max_parallel_jobs` and is recorded like any other, and the
+  scheduler log names the activation it stands for (D21, D45).
+- `enabled = false`, to keep a job in the configuration without scheduling it. The
+  definition and the history stay where they are, and `cronx list` says `disabled`
+  in the `NEXT` column of the job, where a schedule that can never match gets a
+  dash. Nothing triggers it — it is not caught up either — until it is enabled
+  again, which a reload applies at once: the scheduler log names each job a reload
+  disables and each it enables. `cronx run-once` still runs it, because what the
+  option turns off is the scheduling, not the job (D46).
 
 ## [0.4.0] - 2026-10-09
 

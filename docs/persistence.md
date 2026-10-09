@@ -145,4 +145,8 @@ scheduler that was killed leaves its lease behind, so that repair happens when
 the lease expires and the next `cronx run` takes the state.
 
 Activation times that passed while the scheduler was not running are **not**
-replayed: see [scheduling.md](scheduling.md).
+replayed: see [scheduling.md](scheduling.md). The exception is a job that asks to
+be caught up, and what tells cronx how far back to look is its history — the
+newest run recorded for it — which is why a run is written to `runs` before the
+job is executed: a scheduler that is killed in the middle of a run still leaves
+the anchor where the next start needs it.

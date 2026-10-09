@@ -35,8 +35,11 @@ Implemented:
 
 - **Cron-style schedules.** Five-field expressions with ranges, lists, steps and
   month or day-of-week names, for example `0 9-17 * * mon-fri`, the descriptors
-  of a fixed time, from `@yearly` to `@hourly`, and an optional seconds field for
-  a job that runs more than once a minute.
+  of a fixed time, from `@yearly` to `@hourly`, an optional seconds field for a
+  job that runs more than once a minute, and the `L`, `W` and `#` operators of
+  the two day fields, for the days a plain value cannot name: the last day of a
+  month, its last weekday, the weekday nearest to a day, and the last or the n-th
+  occurrence of a weekday.
 - **Jobs that run at startup.** `@reboot` runs a job once, when the scheduler
   starts, so a cache can be warmed or a queue drained with the same file that
   schedules everything else.
@@ -82,9 +85,15 @@ Implemented:
   of a run can be read without knowing where the file is: a job name selects one
   job, `--since` leaves out what is older, and `--follow` keeps printing as the
   log grows.
+- **A job that is kept without being scheduled.** `enabled = false` holds a
+  definition and its history while nothing triggers it — `cronx list` says
+  `disabled` in its `NEXT` column — and setting it back to `true` schedules it
+  again. `cronx run-once` still runs it.
 - **Restart behaviour.** Runs left in progress by a process that died are closed
   on the next start, and activations missed while cronx was not running are not
-  replayed.
+  replayed — unless the job asks to be caught up with `catch_up = true`, and is
+  then run once when the scheduler starts again, however many activations it
+  missed.
 - **One scheduler per state.** `cronx run` holds a lease on the state, so a
   second one refuses to start instead of scheduling the same jobs again;
   `cronx status` says who is running and until when.
@@ -202,6 +211,8 @@ retry = 1                         # one further attempt if it fails
 overlap = "skip"                  # skip | allow | queue
 working_directory = "/var/lib/backup"
 env = { TIER = "gold" }           # jobs do not inherit the environment
+enabled = true                    # false keeps the definition without running it
+catch_up = true                   # make up for a run missed while cronx was stopped
 ```
 
 Only `schedule` and `command` are required; every other field has a default.

@@ -116,10 +116,14 @@ configuration keys, so it is a `MINOR`.
   `@weekly`, `@daily`, `@midnight` and `@hourly` (D41).
 - [x] `@reboot`, to run a job once when the scheduler starts (D42).
 - [x] An optional seconds field, for a six-field expression (D43).
-- [ ] The `L`, `W` and `#` day operators (D19).
-- [ ] Optional catch-up of runs missed while the scheduler was stopped, which
-  today are skipped (D21).
-- [ ] `enabled = false` on a job, to keep a definition without scheduling it.
+- [x] The `L`, `W` and `#` day operators in the two day fields: the last day of a
+  month, its last weekday, the weekday nearest to a day, and the last or the n-th
+  occurrence of a weekday (D44).
+- [x] Optional catch-up of runs missed while the scheduler was stopped, which are
+  otherwise skipped: a job that asks for it is run once when the scheduler starts
+  again (D21, D45).
+- [x] `enabled = false` on a job, to keep a definition — and its history —
+  without scheduling it (D46).
 
 ### 0.6.0 — scripting and integration
 

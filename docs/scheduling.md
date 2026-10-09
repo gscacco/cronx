@@ -46,8 +46,47 @@ A value that carries a step must use `*` or a range: `*/15` and `5-59/15` are
 valid, while `5/15` is rejected with an explanatory error rather than being
 given a surprising meaning.
 
-The following are deliberately **not** supported: the `L`, `W`, `#` and `?`
-operators.
+The `?` operator of Quartz-style crons is deliberately **not** supported: it is
+written as `*` here, which means the same thing.
+
+## Day operators
+
+The two day fields — day of month and day of week — accept the `L`, `W` and `#`
+operators, which name days a plain value cannot. They are the two fields the
+operators belong to: in the others `L`, `W` and `#` are refused, and the error
+names the field that does take them.
+
+| Operator | Field | Meaning |
+| -------- | ----- | ------- |
+| `L`      | day of month | the last day of the month, whether it is the 28th, the 30th or the 31st |
+| `LW`     | day of month | the last weekday of the month: the last day of it that is neither a Saturday nor a Sunday |
+| `nW`     | day of month | the weekday nearest to the n-th day of the month |
+| `L`      | day of week | the last day of the week, which is Saturday where Sunday is the first day of it |
+| `nL`     | day of week | the last occurrence of the weekday n in the month |
+| `n#m`    | day of week | the m-th occurrence of the weekday n in the month, counted from 1 |
+
+An operator is a whole list element, so it carries neither a range nor a step:
+`L/2` and `1-L` are refused rather than given a meaning, while `1,15,L` is a list
+of three days. The weekday of `nL` and `n#m` is a number or a three-letter name,
+and `nW` takes a day of the month, from 1 to 31.
+
+```
+0 0 L * *        the last day of every month
+0 7 LW * *       at 07:00 on the last weekday of every month
+0 9 15W * *      at 09:00 on the weekday nearest to the 15th
+0 4 * * L        at 04:00 every Saturday
+0 22 * * 5L      at 22:00 on the last Friday of every month
+30 3 * * sun#1   at 03:30 on the first Sunday of every month
+0 6 1,15,L * *   at 06:00 on the 1st, the 15th and the last day
+```
+
+A month that does not hold the day an operator names is a month the job does not
+run in: a `31W` is nothing at all in a February of 28 days, and the next
+activation is in the month after it. `n#m` is the same for an occurrence a month
+does not hold, such as a fifth Saturday, and `nW` never reaches into a
+neighbouring month to find the day it was asked for. A day an operator selects is
+a day like any other for the OR semantics below: `0 0 L * mon` runs on the last
+day of the month and on every Monday.
 
 ## Seconds
 
@@ -98,7 +137,9 @@ The job is run once, when `cronx run` starts — from the configuration it is re
 from at that moment, with the command it then has. A scheduler that is already
 running is not a start, so a reload that adds a job of this kind does not run it:
 the scheduler log says so, and the job waits for the next start. Starting cronx
-twice is two starts, and therefore two runs.
+twice is two starts, and therefore two runs. The same holds for a job that asks
+to be caught up, whose trigger is the start as well: a reload catches nothing up
+(see [Missed runs](#missed-runs)).
 
 Like every other trigger, this one is judged by the overlap policy of the job and
 counts against `max_parallel_jobs`; runs left in progress by a previous process
@@ -133,11 +174,52 @@ Two rules cover the nights a clock moves:
 
 ## Missed runs
 
-cronx does not catch up. If the scheduler is not running when a job becomes
-due, that activation is simply skipped and the next one is computed from the
-current time. There are no "missed run" bursts after a restart, and the seconds
-field changes nothing about that: a job that fires every ten seconds is not run
-thirty times to make up for the five minutes the scheduler was down.
+By default cronx does not catch up. If the scheduler is not running when a job
+becomes due, that activation is simply skipped and the next one is computed from
+the current time. There are no "missed run" bursts after a restart, and the
+seconds field changes nothing about that: a job that fires every ten seconds is
+not run thirty times to make up for the five minutes the scheduler was down.
+
+A job can ask for the opposite with `catch_up = true`. A job that asks for it is
+run **once** when the scheduler starts, if at least one of its activations
+passed while cronx was not running:
+
+- the trigger is the **start** of the scheduler, so a reload catches nothing up:
+  a scheduler that is already running is not a start, exactly as for `@reboot`;
+- it is one run, however many activations were missed. It stands for the earliest
+  of them — the first activation after the last run of the job — and the run it
+  leaves in the history is what the next start counts from, so what was made up
+  for is not made up for again;
+- what says how far back cronx looks is the history of the job, and a run is
+  written to it before the job is executed: a scheduler that was killed in the
+  middle of a run therefore leaves the anchor where it should be;
+- a job that has **never run** has no instant to count its missed activations
+  from, so it is not caught up: it waits for its next activation, or for
+  `cronx run-once`;
+- a schedule with no activation on the clock is not caught up either, which is
+  `@reboot`: the start is already its trigger;
+- a job that is **disabled** is not caught up: it is not scheduled at all;
+- the run is judged by the overlap policy of the job and counts against
+  `max_parallel_jobs` like every other trigger. It is recorded in the history at
+  the instant it started, like any other run, and the scheduler log names the
+  missed activation it stands for.
+
+## Disabled jobs
+
+`enabled = false` keeps a job in the configuration without scheduling it. The
+job is still listed by `cronx list`, whose `NEXT` column says `disabled` where a
+job that can never match gets a dash and one that runs at startup says
+`at startup`. Its history is untouched: `cronx status` and `cronx history` report
+what the job did before it was disabled.
+
+What stops is the scheduling. No activation is planned for it, so it is never
+triggered, never caught up and never holds a slot. Setting `enabled` back to
+`true` is what schedules it again, from the moment the scheduler reads the file:
+a reload is enough, as it is for any other change to a job.
+
+`cronx run-once` runs a disabled job like any other. It is an action of the
+person running it rather than a trigger of the scheduler, and what `enabled`
+turns off is the scheduling, not the job.
 
 ## Next activation
 
@@ -214,3 +296,9 @@ its jobs before it exits.
 | `@reboot`             | once, when the scheduler starts |
 | `30 2 * jan,jul *`    | at 02:30 in January and in July |
 | `0 0 * * 7`           | at midnight on Sundays |
+| `0 0 L * *`           | at midnight on the last day of every month |
+| `0 7 LW * *`          | at 07:00 on the last weekday of every month |
+| `0 9 15W * *`         | at 09:00 on the weekday nearest to the 15th |
+| `0 22 * * 5L`         | at 22:00 on the last Friday of every month |
+| `0 0 * * L`           | at midnight every Saturday |
+| `30 3 * * sun#1`      | at 03:30 on the first Sunday of every month |

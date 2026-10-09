@@ -49,6 +49,7 @@ var referenceExamples = []struct {
 	{
 		file: "full.toml",
 		jobs: []referenceJob{
+			{name: "archiver", schedule: "0 5 * * 0", next: disabledNext},
 			{name: "backup", schedule: "0 3 * * *"},
 			{name: "leap-check", schedule: "0 0 31 4 *", next: "-"},
 			{name: "metrics", schedule: "*/5 * * * *"},
@@ -81,6 +82,18 @@ var referenceExamples = []struct {
 		jobs: []referenceJob{
 			{name: "heartbeat", schedule: "*/10 * * * * *"},
 			{name: "poller", schedule: "0,30 * * * * *"},
+		},
+	},
+	{
+		file: "operators.toml",
+		jobs: []referenceJob{
+			{name: "cleanup", schedule: "0 22 * * 5L"},
+			{name: "invoice", schedule: "0 9 15W * *"},
+			{name: "month-close", schedule: "0 0 L * *"},
+			{name: "payroll", schedule: "0 6 1,15,L * *"},
+			{name: "report", schedule: "0 7 LW * *"},
+			{name: "rotation", schedule: "30 3 * * sun#1"},
+			{name: "sweep", schedule: "0 4 * * L"},
 		},
 	},
 }
@@ -124,12 +137,23 @@ func listColumns(t *testing.T, fields []string, expression string) (schedule, ne
 // scheduler starts, in place of an instant.
 const startupNext = "at startup"
 
-// checkNext verifies the NEXT column of a job: the marker of a job that runs
-// when the scheduler starts, a dash when the expression can never match, and an
-// instant otherwise.
+// disabledNext is what the NEXT column says of a job the configuration keeps
+// without scheduling it. It is a third kind of answer: not an instant, not a
+// schedule that can never match, and not a job waiting for a start.
+const disabledNext = "disabled"
+
+// checkNext verifies the NEXT column of a job: the marker of a disabled job,
+// the marker of a job that runs when the scheduler starts, a dash when the
+// expression can never match, and an instant otherwise.
 func checkNext(t *testing.T, job referenceJob, next string) {
 	t.Helper()
 	switch job.next {
+	case disabledNext:
+		if next != disabledNext {
+			t.Errorf("%s runs next %q, want %q because the job is disabled",
+				job.name, next, disabledNext)
+		}
+		return
 	case startupNext:
 		if next != startupNext {
 			t.Errorf("%s runs next %q, want %q because it runs when the scheduler starts",

@@ -60,6 +60,12 @@ func TestParseAppliesDefaults(t *testing.T) {
 	if got, want := len(j.Env), 0; got != want {
 		t.Errorf("len(Job.Env) = %d, want default %d", got, want)
 	}
+	if j.Disabled {
+		t.Errorf("Job.Disabled = %v, want default false: a job that says nothing about it is scheduled", j.Disabled)
+	}
+	if j.CatchUp {
+		t.Errorf("Job.CatchUp = %v, want default false: catch-up is asked for, not assumed", j.CatchUp)
+	}
 }
 
 func TestLoadReadsConfigurationFile(t *testing.T) {

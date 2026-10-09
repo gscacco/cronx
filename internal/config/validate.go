@@ -23,6 +23,11 @@ func buildJob(name string, raw rawJob) (job.Job, []error) {
 		Overlap:          job.DefaultOverlap,
 		WorkingDirectory: raw.WorkingDirectory,
 		Env:              raw.Env,
+		// A job is scheduled unless the configuration turns it off: the
+		// key is `enabled` and the field is its negative, so that a job
+		// that says nothing about it runs.
+		Disabled: raw.Enabled != nil && !*raw.Enabled,
+		CatchUp:  raw.CatchUp,
 	}
 
 	var problems []error
@@ -121,6 +126,8 @@ type rawJob struct {
 	Overlap          string            `toml:"overlap"`
 	WorkingDirectory string            `toml:"working_directory"`
 	Env              map[string]string `toml:"env"`
+	Enabled          *bool             `toml:"enabled"`
+	CatchUp          bool              `toml:"catch_up"`
 }
 
 // sortedKeys returns the keys of m in ascending order.

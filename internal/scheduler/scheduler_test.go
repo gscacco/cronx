@@ -45,7 +45,10 @@ func TestDueSkipsActivationsMissedWhileTheSchedulerWasStopped(t *testing.T) {
 	// SETUP
 	definition := helperJob(t, "backup", "ok")
 	definition.Schedule = "0 3 * * *"
-	// The scheduler starts four days after the activations it missed.
+	// The scheduler starts four days after the activations it missed. A job
+	// that asks to be caught up is run once when the scheduler starts, which
+	// is a step of its own: what is asked here is that planning through Due
+	// never replays what was missed.
 	restarted := time.Date(2026, 1, 5, 4, 0, 0, 0, time.UTC)
 	subject, _, _ := buildSchedulerWithClock(t, clock.Fixed{T: restarted}, definition)
 

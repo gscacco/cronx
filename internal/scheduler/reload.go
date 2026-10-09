@@ -44,7 +44,8 @@ func (s *Scheduler) Reload(configuration config.Config) error {
 
 	s.reportIgnored(configuration)
 	s.reportJobChanges(names)
-	s.reportStartupJobs(schedules)
+	s.reportDisabledJobs(configuration)
+	s.reportStartupJobs(configuration, schedules)
 
 	s.config.Jobs = configuration.Jobs
 	s.schedules = schedules
@@ -128,18 +129,52 @@ func (s *Scheduler) reportJobChanges(names []string) {
 	}
 }
 
+// reportDisabledJobs says which jobs a reload stopped scheduling and which it
+// started scheduling again. A job the configuration keeps without running it is
+// otherwise only visible in `cronx list`, so the log says why it is not being
+// triggered any more. The caller holds the lock.
+func (s *Scheduler) reportDisabledJobs(configuration config.Config) {
+	var disabled, enabled []string
+	for name, definition := range configuration.Jobs {
+		previous, known := s.config.Jobs[name]
+		switch {
+		case !known:
+			continue // a job the reload added, which is reported as added
+		case definition.Disabled && !previous.Disabled:
+			disabled = append(disabled, name)
+		case !definition.Disabled && previous.Disabled:
+			enabled = append(enabled, name)
+		}
+	}
+
+	for _, group := range []struct {
+		names   []string
+		message string
+	}{
+		{disabled, "jobs disabled by the reload, which are not scheduled"},
+		{enabled, "jobs enabled by the reload, which are scheduled again"},
+	} {
+		if len(group.names) == 0 {
+			continue
+		}
+		sort.Strings(group.names)
+		s.logger.Info(group.message, "jobs", strings.Join(group.names, ", "))
+	}
+}
+
 // reportStartupJobs names the jobs a reload turns into jobs that run when the
 // scheduler starts. A scheduler that is already running is not a start, so they
 // are not run now: they wait for the next one, and a reload says so instead of
-// leaving a person waiting for a run that is never coming. The caller holds the
-// lock.
-func (s *Scheduler) reportStartupJobs(schedules map[string]schedule.Schedule) {
+// leaving a person waiting for a run that is never coming. A job that is
+// disabled is left out, because it is not run at the next start either. The
+// caller holds the lock.
+func (s *Scheduler) reportStartupJobs(configuration config.Config, schedules map[string]schedule.Schedule) {
 	var waiting []string
-	for name, parsed := range schedules {
-		if !parsed.RunsAtStartup() {
+	for name, definition := range configuration.Jobs {
+		if definition.Disabled || !schedules[name].RunsAtStartup() {
 			continue
 		}
-		if previous, known := s.schedules[name]; known && previous.RunsAtStartup() {
+		if previous, known := s.config.Jobs[name]; known && !previous.Disabled && s.schedules[name].RunsAtStartup() {
 			continue // already one of them: it ran when this scheduler started
 		}
 		waiting = append(waiting, name)
