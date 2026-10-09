@@ -62,8 +62,9 @@ func (s *Scheduler) Run(ctx context.Context) (err error) {
 }
 
 // begin prepares a run: jobs left in progress by a previous process are closed,
-// and the schedule is planned again so that activations missed while cronx was
-// not running are skipped.
+// the history is trimmed to what the configuration keeps, and the schedule is
+// planned again so that activations missed while cronx was not running are
+// skipped.
 func (s *Scheduler) begin(ctx context.Context) error {
 	interrupted, err := s.store.InterruptStaleRuns(ctx, s.clock.Now())
 	if err != nil {
@@ -74,6 +75,9 @@ func (s *Scheduler) begin(ctx context.Context) error {
 	}
 
 	s.plan(s.clock.Now())
+	for _, name := range s.names {
+		s.prune(ctx, name)
+	}
 	s.logger.Info("scheduler started", "jobs", len(s.names))
 	return nil
 }
@@ -83,10 +87,31 @@ func (s *Scheduler) begin(ctx context.Context) error {
 // Each trigger is judged by the overlap policy of its job when it arrives, and
 // always before the job waits for a free slot: a trigger that arrives while the
 // job is still running is skipped as configured, even when the only slot is the
-// one the run in progress is holding.
+// one the run in progress is holding. The history of a job that is due is
+// trimmed as well, so that one left running for months does not grow without
+// bound either.
 func (s *Scheduler) dispatch(ctx context.Context, now time.Time) {
 	for _, activation := range s.Due(now) {
 		s.start(ctx, activation)
+		s.prune(ctx, activation.Job.Name)
+	}
+}
+
+// prune trims the history of a job to the number of runs the configuration
+// keeps. A history that cannot be trimmed is reported but does not stop the
+// scheduler: running the jobs matters more than the bookkeeping.
+func (s *Scheduler) prune(ctx context.Context, name string) {
+	keep := s.config.Storage.MaxRuns
+	if keep < 1 {
+		return
+	}
+	deleted, err := s.store.PruneRuns(ctx, name, keep)
+	if err != nil {
+		s.logger.Error("pruning the history failed", "job", name, "error", err)
+		return
+	}
+	if deleted > 0 {
+		s.logger.Info("pruned the history", "job", name, "runs", deleted, "kept", keep)
 	}
 }
 
