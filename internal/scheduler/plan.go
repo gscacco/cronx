@@ -6,6 +6,8 @@ import "time"
 // false when the job does not exist, or when its schedule has no activation
 // within the search horizon.
 func (s *Scheduler) Next(name string, after time.Time) (time.Time, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	parsed, known := s.schedules[name]
 	if !known {
 		return time.Time{}, false
@@ -19,6 +21,13 @@ func (s *Scheduler) Next(name string, after time.Time) (time.Time, bool) {
 // Every activation is reported at most once: when the scheduler has been unable
 // to keep up, the activations in between are skipped rather than replayed.
 func (s *Scheduler) Due(now time.Time) []Activation {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.dueLocked(now)
+}
+
+// dueLocked is Due with the lock already held.
+func (s *Scheduler) dueLocked(now time.Time) []Activation {
 	var due []Activation
 	for _, name := range s.names {
 		at, known := s.next[name]
@@ -26,7 +35,7 @@ func (s *Scheduler) Due(now time.Time) []Activation {
 			continue
 		}
 		due = append(due, Activation{Job: s.config.Jobs[name], At: at})
-		s.advance(name, now)
+		s.advanceLocked(name, now)
 	}
 	return due
 }
@@ -34,14 +43,21 @@ func (s *Scheduler) Due(now time.Time) []Activation {
 // plan sets the next activation of every job to the first one after the given
 // instant.
 func (s *Scheduler) plan(after time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.planLocked(after)
+}
+
+// planLocked is plan with the lock already held.
+func (s *Scheduler) planLocked(after time.Time) {
 	for _, name := range s.names {
-		s.advance(name, after)
+		s.advanceLocked(name, after)
 	}
 }
 
-// advance moves the next activation of a job to the first one after the given
-// instant, forgetting the job when it has none.
-func (s *Scheduler) advance(name string, after time.Time) {
+// advanceLocked moves the next activation of a job to the first one after the
+// given instant, forgetting the job when it has none.
+func (s *Scheduler) advanceLocked(name string, after time.Time) {
 	next, ok := s.schedules[name].Next(after)
 	if !ok {
 		delete(s.next, name)
@@ -52,6 +68,8 @@ func (s *Scheduler) advance(name string, after time.Time) {
 
 // nextActivation returns the earliest activation across every job.
 func (s *Scheduler) nextActivation() (time.Time, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	var earliest time.Time
 	found := false
 	for _, at := range s.next {
@@ -61,4 +79,12 @@ func (s *Scheduler) nextActivation() (time.Time, bool) {
 		}
 	}
 	return earliest, found
+}
+
+// jobList returns the names of the configured jobs, copied so that a caller can
+// work with them while a reload replaces them.
+func (s *Scheduler) jobList() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return append([]string(nil), s.names...)
 }
