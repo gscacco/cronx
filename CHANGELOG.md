@@ -8,6 +8,8 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-09
+
 ### Added
 
 - `cronx init`, to write a configuration file to start from: one job, with the

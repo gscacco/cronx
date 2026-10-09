@@ -105,25 +105,29 @@ configuration keys, so it is a `MINOR`.
   file take effect at once, while a change to a setting of the scheduler itself
   is reported and needs a restart (D39).
 
-## Planned
+### 0.5.0 — 2026-10-09
 
-### 0.5.0 — cron expressiveness and a configuration to start from
+Cron expressiveness and a configuration to start from: the schedules a plain
+cron expression cannot write, a job that runs at startup, and a file to begin
+with. The release adds a command and several configuration keys, so it is a
+`MINOR`.
 
-- [x] `cronx init`, to write a configuration file that documents itself: the
-  fields one job needs are set, and every other option is commented out with
-  what it does and what happens without it (D40).
-- [x] The `@`-descriptors that stand for a fixed time: `@yearly`, `@monthly`,
-  `@weekly`, `@daily`, `@midnight` and `@hourly` (D41).
-- [x] `@reboot`, to run a job once when the scheduler starts (D42).
-- [x] An optional seconds field, for a six-field expression (D43).
-- [x] The `L`, `W` and `#` day operators in the two day fields: the last day of a
+- `cronx init` writes a configuration file that documents itself: the fields one
+  job needs are set, and every other option is commented out with what it does
+  and what happens without it (D40).
+- The `@`-descriptors of a fixed time: `@yearly`, `@monthly`, `@weekly`,
+  `@daily`, `@midnight` and `@hourly` (D41).
+- `@reboot`, to run a job once when the scheduler starts (D42).
+- An optional seconds field, for a six-field expression (D43).
+- The `L`, `W` and `#` day operators in the two day fields: the last day of a
   month, its last weekday, the weekday nearest to a day, and the last or the n-th
   occurrence of a weekday (D44).
-- [x] Optional catch-up of runs missed while the scheduler was stopped, which are
-  otherwise skipped: a job that asks for it is run once when the scheduler starts
-  again (D21, D45).
-- [x] `enabled = false` on a job, to keep a definition — and its history —
-  without scheduling it (D46).
+- Optional catch-up of the runs missed while the scheduler was stopped: a job
+  that asks for it is run once when the scheduler starts again (D21, D45).
+- `enabled = false` on a job, to keep a definition — and its history — without
+  scheduling it (D46).
+
+## Planned
 
 ### 0.6.0 — scripting and integration
 
