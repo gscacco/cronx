@@ -131,6 +131,13 @@ func internalJob(t *testing.T, name string, overlap job.OverlapPolicy) job.Job {
 // log in a temporary directory, for the tests of this package.
 func buildInternalScheduler(t *testing.T, parallel int, definitions ...job.Job) (*Scheduler, *store.Store) {
 	t.Helper()
+	return buildInternalSchedulerWith(t, config.Storage{}, parallel, definitions...)
+}
+
+// buildInternalSchedulerWith is buildInternalScheduler with the [storage]
+// settings given, so that a test can ask for a history that is pruned.
+func buildInternalSchedulerWith(t *testing.T, storage config.Storage, parallel int, definitions ...job.Job) (*Scheduler, *store.Store) {
+	t.Helper()
 
 	persistent, err := store.OpenMemory()
 	if err != nil {
@@ -156,6 +163,7 @@ func buildInternalScheduler(t *testing.T, parallel int, definitions ...job.Job) 
 		Config: config.Config{
 			Scheduler: config.Scheduler{Timezone: "Local", MaxParallelJobs: parallel},
 			Logging:   config.Logging{Level: "error"},
+			Storage:   storage,
 			Jobs:      configured,
 		},
 		Store:  persistent,
