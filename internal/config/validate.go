@@ -100,8 +100,10 @@ type rawScheduler struct {
 }
 
 type rawLogging struct {
-	Level string `toml:"level"`
-	Path  string `toml:"path"`
+	Level      string `toml:"level"`
+	Path       string `toml:"path"`
+	MaxSize    string `toml:"max_size"`
+	MaxBackups *int   `toml:"max_backups"`
 }
 
 type rawStorage struct {
