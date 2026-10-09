@@ -53,6 +53,7 @@ being tested.
 | `logs_test.go` | `cronx logs` prints what a run printed, only for the job that is named, nothing for a job that never ran, and nothing at all before the first run |
 | `rotation_test.go` | a run log that passes its configured size is rotated, only the configured number of rotated files is kept, and no log is rotated when no size is configured |
 | `retention_test.go` | the history is trimmed to the configured number of runs of each job when the scheduler starts, and a pruned history is what `history` reports |
+| `reload_test.go` | a scheduler sent `SIGHUP` picks up a job the file added, refuses a file that cannot be used and keeps running, and applies the reload that follows the refusal |
 | `paths_test.go` | the run log and the status database are written where `[logging].path` and `[storage].path` say, and nowhere else |
 | `timezone_test.go` | the next run is computed on the clock of `[scheduler].timezone`, not on the clock of the machine |
 | `configuration_test.go` | a configuration that is wrong in one way is rejected by every command, with a useful explanation and without touching the state; the configuration is found through `--config`, `CRONX_CONFIG` or the home directory |
@@ -102,6 +103,14 @@ over a history that is longer than the configuration keeps, and dispatches a
 trigger to a job, to check that both moments trim it. `test/integration` records
 five runs with `run-once`, starts the scheduler and stops it, and then asks
 `cronx history` what is left.
+
+A reload is checked at both levels too. `internal/scheduler` calls `Reload`
+directly, because the rule it pins is what replaces what: the jobs of the new
+configuration, the activations planned again, the settings that cannot be
+applied and are reported instead, and a configuration that is refused whole when
+a schedule in it cannot be read. `test/integration` sends the running scheduler a
+real `SIGHUP` — after adding a job to the file, and after breaking it — and
+reads the scheduler log to see what it did with it.
 
 The nights a clock moves are checked the same way, in `internal/schedule`: the
 activation after a daylight saving transition is asked for directly, because no

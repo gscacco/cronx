@@ -71,6 +71,12 @@ together with it instead of being left behind. The grace period defaults to ten
 seconds and is configured per job with `grace_period`
 ([configuration.md](configuration.md)).
 
+The signals the **scheduler** reacts to belong to the same picture: it stops on
+`SIGINT` and `SIGTERM`, stopping its jobs with it, and it reads its configuration
+again on `SIGHUP` ([cli.md](cli.md)). None of the three is forwarded to a job: a
+job is signalled only by its timeout, by the grace period and by the scheduler
+stopping, which is what the group above is for.
+
 ## What cronx does not do
 
 Being honest about the boundaries matters as much as the guarantees:
