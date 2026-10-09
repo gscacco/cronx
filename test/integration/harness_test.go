@@ -571,6 +571,26 @@ func (e *environment) waitForRunWhere(name string, budget time.Duration, want fu
 	}
 }
 
+// waitForRuns waits until the recorded runs of a job satisfy want, and returns
+// the runs that did. A wait on a snapshot is what a job that keeps firing asks
+// for: a run is written down before the job is executed, so a wait followed by a
+// second read can find the next run of the job already in progress.
+func (e *environment) waitForRuns(name string, budget time.Duration, want func([]store.Run) bool) []store.Run {
+	e.t.Helper()
+	deadline := time.Now().Add(budget)
+	for {
+		runs := e.runs(name)
+		if want(runs) {
+			return runs
+		}
+		if time.Now().After(deadline) {
+			e.t.Fatalf("the runs of %q never reached the expected state within %s\n%s",
+				name, budget, e.describe())
+		}
+		time.Sleep(pollInterval)
+	}
+}
+
 // report is what the job helper records about the process it ran in.
 type report struct {
 	Argv    []string          `json:"argv"`

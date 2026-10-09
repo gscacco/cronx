@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gscacco.com/cronx/internal/job"
+	"gscacco.com/cronx/internal/store"
 )
 
 // A schedule with a seconds field fires more than once a minute, which no
@@ -25,10 +26,14 @@ func TestASecondsFieldRunsMoreThanOnceAMinute(t *testing.T) {
 	scheduler := environment.startScheduler(configPath)
 
 	// EXERCISE: wait for the first run, then for a second one, which is
-	// seconds away rather than a minute away.
+	// seconds away rather than a minute away. What is waited for is a
+	// snapshot of the history with a finished second run in it, not two
+	// recorded runs read once more afterwards: a run is written down before
+	// the job is executed, so a job that fires every other second has its
+	// next run in progress by the time a second read reaches the history.
 	environment.waitForRun("ticks", job.StatusSucceeded, activationBudget)
-	environment.waitFor("a second run of the job", secondsBudget, func() bool {
-		return len(environment.runs("ticks")) >= 2
+	runs := environment.waitForRuns("ticks", secondsBudget, func(runs []store.Run) bool {
+		return len(runs) >= 2 && !runs[0].FinishedAt.IsZero()
 	})
 
 	// VERIFY
@@ -44,10 +49,6 @@ func TestASecondsFieldRunsMoreThanOnceAMinute(t *testing.T) {
 
 	// The two runs are seconds apart, which is what the seconds field asks
 	// for: the finest gap a five-field expression can produce is a minute.
-	runs := environment.runs("ticks")
-	if len(runs) < 2 {
-		t.Fatalf("the job has %d recorded runs, want at least two", len(runs))
-	}
 	latest, previous := runs[0], runs[1]
 	if latest.Status != job.StatusSucceeded || previous.Status != job.StatusSucceeded {
 		t.Errorf("the last two runs are recorded as %q and %q, want both %q",
