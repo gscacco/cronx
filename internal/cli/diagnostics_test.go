@@ -14,7 +14,7 @@ var brokenProblems = []string{
 	`job "backup": command "backup" must be an absolute path`,
 	`job "backup": retry must not be negative, got -1`,
 	`job "cleanup": schedule is not valid: cron expression "@every-minute" is not a known` +
-		` descriptor: use one of @yearly, @monthly, @weekly, @daily, @midnight, @hourly`,
+		` descriptor: use one of @yearly, @monthly, @weekly, @daily, @midnight, @hourly, @reboot`,
 	`job "cleanup": overlap "sometimes" is not one of skip, allow, queue`,
 	`job "cleanup": timeout "30 minutes" is not a valid duration`,
 	`job "report": schedule is required`,

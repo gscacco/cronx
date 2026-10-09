@@ -101,7 +101,7 @@ func TestParseRejectsInvalidDescriptors(t *testing.T) {
 		want       string
 	}{
 		{name: "a misspelled descriptor", expression: "@dayly", want: "is not a known descriptor"},
-		{name: "a descriptor cronx does not have", expression: "@reboot", want: "is not a known descriptor"},
+		{name: "a misspelled reboot", expression: "@reboots", want: "is not a known descriptor"},
 		{name: "the marker on its own", expression: "@", want: "is not a known descriptor"},
 		{name: "a descriptor followed by a field", expression: "@daily 0", want: "stands alone"},
 		{name: "a descriptor followed by five fields", expression: "@hourly * * * *", want: "stands alone"},

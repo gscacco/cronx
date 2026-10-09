@@ -31,3 +31,9 @@ command = "/usr/local/bin/rotate"
 [jobs.hourly]
 schedule = "@hourly"               # 0 * * * *: the start of every hour
 command = "/usr/local/bin/poll"
+
+# @reboot does not stand for a time: the job is run once, when the scheduler
+# starts, so cronx list shows "at startup" in its NEXT column.
+[jobs.reboot]
+schedule = "@reboot"               # once, when the scheduler starts
+command = "/usr/local/bin/cache-warmer"
