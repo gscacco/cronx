@@ -17,7 +17,7 @@ var invalidConfigurations = []struct {
 }{
 	{
 		fixture: "invalid/schedule.toml",
-		problem: `job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, got 4`,
+		problem: `job "backup": schedule is not valid: cron expression "0 3 * *" must have 5 fields, or 6 with the seconds field first, got 4`,
 	},
 	{
 		fixture: "invalid/command.toml",
