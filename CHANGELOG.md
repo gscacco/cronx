@@ -24,6 +24,14 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
   A descriptor is a whole expression, so fields after it are refused, and an
   unknown one is answered with the list of the ones accepted. A job keeps the
   descriptor it was written with, which is what `cronx list` prints (D41).
+- `@reboot`, to run a job once when the scheduler starts rather than on the clock:
+  it has no activation to compute, so `cronx list` says `at startup` in its `NEXT`
+  column, where a schedule that can never match gets a dash. The start is the
+  trigger: the run is judged by the overlap policy of the job and counts against
+  `max_parallel_jobs` like every other one, and runs left in progress by a
+  previous process are closed first. A reload that turns a job into one of these
+  does not run it — a scheduler that is already running is not a start — and says
+  so in its log, so the job is not waited for in vain (D42).
 
 ## [0.4.0] - 2026-10-09
 

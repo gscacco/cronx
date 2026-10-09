@@ -5,9 +5,10 @@ import (
 	"strings"
 )
 
-// descriptors are the shorthands cronx accepts for a fixed time, each with the
-// five-field expression it stands for, in the order docs/scheduling.md lists
-// them. Traditional cron defines the same six.
+// descriptors are the shorthands cronx accepts, each with the five-field
+// expression it stands for, in the order docs/scheduling.md lists them. The one
+// with no expression is the shorthand that is not a time: "@reboot" is
+// triggered by the scheduler starting, and no expression stands behind it.
 var descriptors = []struct {
 	name       string
 	expression string
@@ -18,6 +19,7 @@ var descriptors = []struct {
 	{name: "@daily", expression: "0 0 * * *"},
 	{name: "@midnight", expression: "0 0 * * *"},
 	{name: "@hourly", expression: "0 * * * *"},
+	{name: "@reboot"},
 }
 
 // isDescriptor reports whether an expression is written as a descriptor, which
@@ -27,9 +29,10 @@ func isDescriptor(expression string) bool {
 	return strings.HasPrefix(strings.TrimSpace(expression), "@")
 }
 
-// parseDescriptor parses a descriptor by expanding it into the expression it
-// stands for. The descriptor is kept as the expression of the Schedule, so that
-// a job is reported as its author wrote it.
+// parseDescriptor parses a descriptor: the five-field expression it stands for,
+// or, for "@reboot", the fact that it is the scheduler starting that triggers
+// the job. The descriptor is kept as the expression of the Schedule, so that a
+// job is reported as its author wrote it.
 func parseDescriptor(expression string) (Schedule, error) {
 	fields := strings.Fields(expression)
 	if len(fields) != 1 {
@@ -39,9 +42,13 @@ func parseDescriptor(expression string) (Schedule, error) {
 	}
 
 	for _, descriptor := range descriptors {
-		if strings.EqualFold(fields[0], descriptor.name) {
-			return parseFields(expression, descriptor.expression)
+		if !strings.EqualFold(fields[0], descriptor.name) {
+			continue
 		}
+		if descriptor.expression == "" {
+			return Schedule{expression: expression, startup: true}, nil
+		}
+		return parseFields(expression, descriptor.expression)
 	}
 
 	return Schedule{}, fmt.Errorf("cron expression %q is not a known descriptor: use one of %s",

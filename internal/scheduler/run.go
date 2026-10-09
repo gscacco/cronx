@@ -67,9 +67,10 @@ func (s *Scheduler) Run(ctx context.Context) (err error) {
 }
 
 // begin prepares a run: jobs left in progress by a previous process are closed,
-// the history is trimmed to what the configuration keeps, and the schedule is
+// the history is trimmed to what the configuration keeps, the schedule is
 // planned again so that activations missed while cronx was not running are
-// skipped.
+// skipped, and the jobs that run when the scheduler starts are triggered, since
+// this start is their activation.
 func (s *Scheduler) begin(ctx context.Context) error {
 	interrupted, err := s.store.InterruptStaleRuns(ctx, s.clock.Now())
 	if err != nil {
@@ -83,6 +84,9 @@ func (s *Scheduler) begin(ctx context.Context) error {
 	names := s.jobList()
 	for _, name := range names {
 		s.prune(ctx, name)
+	}
+	for _, activation := range s.Startup(s.clock.Now()) {
+		s.start(ctx, activation)
 	}
 	s.logger.Info("scheduler started", "jobs", len(names))
 	return nil

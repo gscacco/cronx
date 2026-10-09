@@ -91,3 +91,45 @@ func TestTheSchedulerPrunesTheHistoryWhenATriggerArrives(t *testing.T) {
 		}
 	}
 }
+
+func TestAStartupRunJoinsTheTrimmedHistory(t *testing.T) {
+	// SETUP: a job that runs when the scheduler starts, with a history longer
+	// than the configuration keeps. A start both trims that history and adds a
+	// run to it, and nothing triggers the job again: the start is the only
+	// trigger this job ever has.
+	definition := internalJob(t, "cache-warmer", job.OverlapSkip)
+	definition.Schedule = "@reboot"
+	subject, persistent := buildInternalSchedulerWith(t, config.Storage{MaxRuns: 2}, 1, definition)
+	seeded := seedInternalRuns(t, persistent, definition.Name, 5)
+
+	// EXERCISE: the scheduler starts, which triggers the job, and is stopped
+	// again.
+	runCtx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		cancel()
+	}()
+	if err := subject.Run(runCtx); err != nil {
+		t.Fatalf("Run() returned an unexpected error: %v", err)
+	}
+
+	// VERIFY: the run the start produced is the newest of the history, on top
+	// of the newest runs the configuration keeps, and the runs before those are
+	// gone. The run is recorded when it starts rather than when it is
+	// triggered, so it lands after the trim of the start: what is left is what
+	// the configuration keeps, plus that one.
+	runs := runsOf(t, persistent, definition.Name)
+	if len(runs) == 0 {
+		t.Fatal("the history is empty, want the run the start produced")
+	}
+	if runs[0].ID <= seeded[4] {
+		t.Errorf("the newest run is %d, want the run the start produced, which is newer than the seeded run %d",
+			runs[0].ID, seeded[4])
+	}
+	for _, run := range runs[1:] {
+		if run.ID <= seeded[2] {
+			t.Errorf("run %d is still in the history, want it pruned: the configuration keeps the newest two",
+				run.ID)
+		}
+	}
+}

@@ -10,7 +10,7 @@ stale: the test suite reads the same files, so an example that stops being valid
 | [`minimal.toml`](../examples/configs/minimal.toml) | The smallest configuration cronx accepts: one job, the two required fields. |
 | [`full.toml`](../examples/configs/full.toml) | Every field of a job, plus the global scheduler and logging settings, all three overlap policies and a schedule that can never match. |
 | [`maintenance.toml`](../examples/configs/maintenance.toml) | A realistic set-up for a single server: backup, log rotation, vacuum, report. |
-| [`descriptors.toml`](../examples/configs/descriptors.toml) | The six descriptors of a fixed time, each next to the expression it stands for. |
+| [`descriptors.toml`](../examples/configs/descriptors.toml) | The descriptors cronx accepts: the six fixed times, each next to the expression it stands for, and `@reboot`. |
 | [`broken.toml`](../examples/configs/broken.toml) | Deliberately invalid: the reference for what the diagnostics look like. |
 
 The commands of the valid examples are placeholders pointing at the usual
@@ -119,19 +119,22 @@ trigger must be honoured.
 
 ## descriptors.toml
 
-A fixed time can be written as a descriptor instead of as five fields:
+A fixed time — or the start of the scheduler — can be written as a descriptor
+instead of as five fields:
 
-| Job | Schedule | Stands for |
-| --- | -------- | ---------- |
+| Job | Schedule | Time |
+| --- | -------- | ---- |
 | `yearly` | `@yearly` | `0 0 1 1 *`, midnight on 1 January |
 | `monthly` | `@monthly` | `0 0 1 * *`, midnight on the first day of the month |
 | `weekly` | `@weekly` | `0 0 * * 0`, midnight on Sunday |
 | `daily` | `@daily` | `0 0 * * *`, midnight every day |
 | `midnight` | `@midnight` | the same time as `@daily` |
 | `hourly` | `@hourly` | `0 * * * *`, the start of every hour |
+| `reboot` | `@reboot` | no expression: the job runs once, when the scheduler starts |
 
 A descriptor is a whole expression, so it is what `cronx list` prints; the fields
-behind it are never shown in its place:
+behind it are never shown in its place, and `@reboot`, which stands for no time
+at all, is shown as `at startup`:
 
 ```console
 $ cronx list --config examples/configs/descriptors.toml
@@ -140,6 +143,7 @@ daily     @daily     2026-10-10 00:00:00 CEST
 hourly    @hourly    2026-10-09 21:00:00 CEST
 midnight  @midnight  2026-10-10 00:00:00 CEST
 monthly   @monthly   2026-11-01 00:00:00 CET
+reboot    @reboot    at startup
 weekly    @weekly    2026-10-11 00:00:00 CEST
 yearly    @yearly    2027-01-01 00:00:00 CET
 ```

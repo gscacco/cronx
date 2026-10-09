@@ -44,6 +44,7 @@ func (s *Scheduler) Reload(configuration config.Config) error {
 
 	s.reportIgnored(configuration)
 	s.reportJobChanges(names)
+	s.reportStartupJobs(schedules)
 
 	s.config.Jobs = configuration.Jobs
 	s.schedules = schedules
@@ -125,4 +126,28 @@ func (s *Scheduler) reportJobChanges(names []string) {
 	if len(removed) > 0 {
 		s.logger.Info("jobs removed by the reload", "jobs", strings.Join(removed, ", "))
 	}
+}
+
+// reportStartupJobs names the jobs a reload turns into jobs that run when the
+// scheduler starts. A scheduler that is already running is not a start, so they
+// are not run now: they wait for the next one, and a reload says so instead of
+// leaving a person waiting for a run that is never coming. The caller holds the
+// lock.
+func (s *Scheduler) reportStartupJobs(schedules map[string]schedule.Schedule) {
+	var waiting []string
+	for name, parsed := range schedules {
+		if !parsed.RunsAtStartup() {
+			continue
+		}
+		if previous, known := s.schedules[name]; known && previous.RunsAtStartup() {
+			continue // already one of them: it ran when this scheduler started
+		}
+		waiting = append(waiting, name)
+	}
+	if len(waiting) == 0 {
+		return
+	}
+	sort.Strings(waiting)
+	s.logger.Warn("jobs that run when the scheduler starts were added, and are run at the next start",
+		"jobs", strings.Join(waiting, ", "))
 }

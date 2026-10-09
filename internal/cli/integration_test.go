@@ -73,6 +73,7 @@ var referenceExamples = []struct {
 			{name: "daily", schedule: "@daily"},
 			{name: "midnight", schedule: "@midnight"},
 			{name: "hourly", schedule: "@hourly"},
+			{name: "reboot", schedule: "@reboot", next: startupNext},
 		},
 	},
 }
@@ -95,38 +96,41 @@ func listRow(t *testing.T, output, job string) []string {
 	return nil
 }
 
-// listColumns splits a row of "list" into the schedule and the next activation,
-// which is either an instant, shown as a date, a time and a zone, or a single
-// dash for a job that never runs. A schedule is five fields, or one descriptor,
-// which is one field on its own.
+// listColumns splits a row of "list" into the schedule and what the NEXT column
+// says: an instant, shown as a date, a time and a zone, the marker of a job that
+// runs when the scheduler starts, or a single dash for a job that never runs. A
+// schedule is five fields, or one descriptor, which is one field on its own;
+// whatever follows it is the NEXT column, which checkNext reads.
 func listColumns(t *testing.T, fields []string) (schedule, next string) {
 	t.Helper()
 	scheduleFields := 5
 	if len(fields) > 1 && strings.HasPrefix(fields[1], "@") {
 		scheduleFields = 1
 	}
-	if len(fields) < 1+scheduleFields {
-		t.Fatalf("list row = %v, want a job and a schedule", fields)
+	if len(fields) < 1+scheduleFields+1 {
+		t.Fatalf("list row = %v, want a job, a schedule and a NEXT column", fields)
 	}
 	schedule = strings.Join(fields[1:1+scheduleFields], " ")
-
-	switch len(fields) {
-	case 1 + scheduleFields + 3:
-		return schedule, strings.Join(fields[1+scheduleFields:], " ")
-	case 1 + scheduleFields + 1:
-		return schedule, fields[1+scheduleFields]
-	default:
-		t.Fatalf("list row = %v, want a job, a schedule and an instant or a dash",
-			fields)
-		return "", ""
-	}
+	return schedule, strings.Join(fields[1+scheduleFields:], " ")
 }
 
-// checkNext verifies the NEXT column of a job: a dash when the expression can
-// never match, an instant otherwise.
+// startupNext is what the NEXT column says of a job that runs when the
+// scheduler starts, in place of an instant.
+const startupNext = "at startup"
+
+// checkNext verifies the NEXT column of a job: the marker of a job that runs
+// when the scheduler starts, a dash when the expression can never match, and an
+// instant otherwise.
 func checkNext(t *testing.T, job referenceJob, next string) {
 	t.Helper()
-	if job.next == "-" {
+	switch job.next {
+	case startupNext:
+		if next != startupNext {
+			t.Errorf("%s runs next %q, want %q because it runs when the scheduler starts",
+				job.name, next, startupNext)
+		}
+		return
+	case "-":
 		if next != "-" {
 			t.Errorf("%s runs next at %q, want a dash because the schedule never matches",
 				job.name, next)

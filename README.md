@@ -36,6 +36,9 @@ Implemented:
 - **Cron-style schedules.** Five-field expressions with ranges, lists, steps and
   month or day-of-week names, for example `0 9-17 * * mon-fri`, and the
   descriptors of a fixed time, from `@yearly` to `@hourly`.
+- **Jobs that run at startup.** `@reboot` runs a job once, when the scheduler
+  starts, so a cache can be warmed or a queue drained with the same file that
+  schedules everything else.
 - **The zone you schedule in.** `[scheduler].timezone` chooses the clock
   activation times are computed on: an IANA name such as `Europe/Rome`, or
   `Local` for the zone of the machine.

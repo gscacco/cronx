@@ -3,8 +3,9 @@ package scheduler
 import "time"
 
 // Next returns the next activation of a job after the given instant. It reports
-// false when the job does not exist, or when its schedule has no activation
-// within the search horizon.
+// false when the job does not exist, when its schedule has no activation within
+// the search horizon, and when the job runs when the scheduler starts rather
+// than on the clock.
 func (s *Scheduler) Next(name string, after time.Time) (time.Time, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -13,6 +14,32 @@ func (s *Scheduler) Next(name string, after time.Time) (time.Time, bool) {
 		return time.Time{}, false
 	}
 	return parsed.Next(after)
+}
+
+// RunsAtStartup reports whether a job is triggered by the scheduler starting
+// rather than by the clock. It reports false for a job that does not exist.
+func (s *Scheduler) RunsAtStartup(name string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	parsed, known := s.schedules[name]
+	return known && parsed.RunsAtStartup()
+}
+
+// Startup returns the activations a starting scheduler owes to the jobs that
+// run at startup rather than on the clock. The instant of each of them is the
+// one the scheduler started at, which is what the run is recorded against.
+func (s *Scheduler) Startup(now time.Time) []Activation {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var starting []Activation
+	for _, name := range s.names {
+		if !s.schedules[name].RunsAtStartup() {
+			continue
+		}
+		starting = append(starting, Activation{Job: s.config.Jobs[name], At: now})
+	}
+	return starting
 }
 
 // Due returns the activations that have arrived at or before now and schedules

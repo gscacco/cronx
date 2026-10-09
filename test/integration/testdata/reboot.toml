@@ -1,0 +1,11 @@
+# Configuration for a job that runs when the scheduler starts rather than when
+# the clock reaches an instant: nothing is waited for, so a test sees the run as
+# soon as the scheduler is up.
+#
+#   @TEST_DIR@    a directory only the test knows, removed with it
+#   @JOB_HELPER@  the compiled program the job runs
+
+[jobs.reboot]
+schedule = "@reboot"
+command = "@JOB_HELPER@"
+args = ["write", "@TEST_DIR@/reboot", "ran", "out", "the reboot job ran"]

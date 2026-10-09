@@ -50,12 +50,21 @@ func newListCommand(configPath *string) *cobra.Command {
 	}
 }
 
-// nextActivationText renders when a job runs next, or a dash when it never
-// will.
+// nextActivationText renders when a job runs next: an instant, the marker of a
+// job that runs when the scheduler starts, or a dash when it never will.
 func nextActivationText(environment *environment, name string, now time.Time) string {
+	if environment.scheduler.RunsAtStartup(name) {
+		return startupText
+	}
 	next, ok := environment.scheduler.Next(name, now)
 	if !ok {
 		return "-"
 	}
 	return next.Format(timestampLayout)
 }
+
+// startupText is what the NEXT column says of a job that is triggered by the
+// scheduler starting rather than by the clock: it is waiting for a scheduler
+// that is not running, which is a different thing from a schedule that can
+// never match.
+const startupText = "at startup"
