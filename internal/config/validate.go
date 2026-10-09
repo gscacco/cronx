@@ -107,7 +107,8 @@ type rawLogging struct {
 }
 
 type rawStorage struct {
-	Path string `toml:"path"`
+	Path    string `toml:"path"`
+	MaxRuns *int   `toml:"max_runs"`
 }
 
 type rawJob struct {
