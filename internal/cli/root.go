@@ -29,6 +29,7 @@ func NewRootCommand() *cobra.Command {
 		newListCommand(&configPath),
 		newStatusCommand(&configPath),
 		newHistoryCommand(&configPath),
+		newLogsCommand(&configPath),
 		newRunOnceCommand(&configPath),
 		newRunCommand(&configPath),
 		newVersionCommand(),
