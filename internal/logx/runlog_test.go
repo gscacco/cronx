@@ -22,11 +22,11 @@ var fixedInstant = time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
 const stampedInstant = "2026-01-02T03:04:05Z"
 
 // newRunLog opens a run log inside a fresh temporary directory and returns it
-// together with the path it writes to.
+// together with the path it writes to. The log is never rotated.
 func newRunLog(t *testing.T) (*logx.Log, string) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "logs", "runs.log")
-	return logx.Open(path, clock.Fixed{T: fixedInstant}), path
+	return logx.Open(path, clock.Fixed{T: fixedInstant}, logx.Rotation{}), path
 }
 
 // readFile returns the contents of a file, failing the test when it cannot be

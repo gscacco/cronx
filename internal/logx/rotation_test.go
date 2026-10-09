@@ -107,7 +107,7 @@ func TestTheOldestRotatedLogIsDroppedWhenTheBackupsAreFull(t *testing.T) {
 
 func TestARotatedLogIsOnlyReadableByItsOwner(t *testing.T) {
 	// SETUP
-	subject, path := rotatingRunLog(t, 100, 1)
+	subject, path := rotatingRunLog(t, 60, 1)
 	writeRunLine(t, subject, "backup", 1, "line-1")
 	writeRunLine(t, subject, "backup", 2, "line-2")
 

@@ -74,19 +74,25 @@ func (l Layout) SchedulerPath() string {
 // The file is created on the first write, so that a command which never runs a
 // job leaves nothing behind. Runs may write to it concurrently: each line is
 // written whole, and its bytes are never interleaved with those of another run.
+// A configured Rotation renames the file once it would pass its maximum size,
+// so that a job which prints a great deal cannot fill the disk.
 type Log struct {
-	path  string
-	clock clock.Clock
+	path     string
+	clock    clock.Clock
+	rotation Rotation
 
 	mu   sync.Mutex
 	file *os.File
+	// size is how much the file holds, so that a rotation can be decided
+	// without asking the file system for every line.
+	size int64
 }
 
 // Open returns the log whose output is written to path, stamping every line
-// with the time read from clk. Nothing is written where the log is returned:
-// the file is created on the first write.
-func Open(path string, clk clock.Clock) *Log {
-	return &Log{path: path, clock: clk}
+// with the time read from clk and rotating the file as rotation says. Nothing
+// is written where the log is returned: the file is created on the first write.
+func Open(path string, clk clock.Clock, rotation Rotation) *Log {
+	return &Log{path: path, clock: clk, rotation: rotation}
 }
 
 // Path returns the file the log is written to.
@@ -120,7 +126,8 @@ func (l *Log) Close() error {
 }
 
 // openLocked creates the directory and the file of the log when they do not
-// exist yet. The caller holds the lock.
+// exist yet, and learns how much the file already holds. The caller holds the
+// lock.
 func (l *Log) openLocked() error {
 	if l.file != nil {
 		return nil
@@ -133,11 +140,20 @@ func (l *Log) openLocked() error {
 	if err != nil {
 		return fmt.Errorf("opening the log %s: %w", l.path, err)
 	}
+	info, err := file.Stat()
+	if err != nil {
+		_ = file.Close()
+		return fmt.Errorf("reading the size of the log %s: %w", l.path, err)
+	}
 	l.file = file
+	l.size = info.Size()
 	return nil
 }
 
-// write emits one line of a run, prefixed with what identifies it.
+// write emits one line of a run, prefixed with what identifies it. A line that
+// does not fit in the log any more rotates it first; a rotation that fails is
+// not fatal, because capturing the output of a job is best effort and must not
+// stop a run.
 func (l *Log) write(prefix, text []byte) {
 	entry := make([]byte, 0, len(prefix)+len(text)+1)
 	entry = append(entry, prefix...)
@@ -149,7 +165,13 @@ func (l *Log) write(prefix, text []byte) {
 	if err := l.openLocked(); err != nil {
 		return
 	}
-	_, _ = l.file.Write(entry)
+	if l.rotation.rotates(l.size, int64(len(entry))) {
+		if err := l.rotateLocked(); err != nil {
+			return
+		}
+	}
+	written, _ := l.file.Write(entry)
+	l.size += int64(written)
 }
 
 // RunWriter captures the output of one run. It buffers what it receives until

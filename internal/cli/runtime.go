@@ -59,7 +59,10 @@ func openEnvironment(path string, output io.Writer) (*environment, error) {
 		return nil, err
 	}
 
-	logs := logx.Open(logPath, clock.System{})
+	logs := logx.Open(logPath, clock.System{}, logx.Rotation{
+		MaxSize:    configuration.Logging.MaxSize,
+		MaxBackups: configuration.Logging.MaxBackups,
+	})
 
 	logger, err := logx.NewLogger(output, configuration.Logging.Level)
 	if err != nil {
