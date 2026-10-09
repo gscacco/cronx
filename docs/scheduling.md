@@ -93,6 +93,12 @@ Two questions are answered separately:
 | `allow` | A second run starts immediately, alongside the first. |
 | `queue` | The new run waits until the previous one has finished, then starts. |
 
+The policy is applied to a trigger **when it arrives**, before the job waits for
+a free slot, so the table holds whatever `max_parallel_jobs` is: with the
+default of one, a trigger that arrives while the only slot is held by the run it
+overlaps is still a trigger that the policy judges — a `skipped` run, not a run
+that waits its turn.
+
 ### Retries
 
 `retry = N` means up to `N` further attempts after the first one fails. Every
@@ -104,7 +110,9 @@ version: a retry follows immediately.
 
 `max_parallel_jobs` bounds how many jobs run at the same time. When more jobs
 are due than there are free slots, the extra ones wait for a slot rather than
-being dropped.
+being dropped. The wait comes after the overlap policy of each trigger has been
+applied, and a `queue`d run waits for the run of its own job before it takes a
+slot, so a job that is waiting its turn does not hold one.
 
 ### Stopping
 

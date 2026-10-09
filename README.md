@@ -51,7 +51,9 @@ Implemented:
   processes it started, first with `SIGTERM` and, once its `grace_period` is over
   (ten seconds by default), with `SIGKILL`.
 - **Overlap policies.** A trigger that arrives while the job is still running is
-  skipped, run anyway, or queued, according to the job's policy.
+  skipped, run anyway, or queued, according to the job's policy. The policy is
+  applied to the trigger when it arrives, before the job waits for a free slot,
+  so it holds whatever `max_parallel_jobs` is.
 - **Parallelism limit.** `max_parallel_jobs` bounds how many jobs run at the same
   time.
 - **Execution history.** One row per attempt in a local SQLite database, with its
@@ -73,12 +75,6 @@ Implemented:
 Not implemented yet:
 
 - **Job dependencies** are not supported.
-- **`overlap = "skip"`** only takes effect when more than one job may run at a
-  time (`max_parallel_jobs` of at least 2). With the default of 1, a trigger that
-  arrives while the job is still running waits for a free slot and then runs.
-
-The last item is a behaviour the test suite found, with the evidence, in
-[docs/testing.md](docs/testing.md).
 
 ## Build
 

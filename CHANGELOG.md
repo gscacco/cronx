@@ -33,6 +33,12 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 - A `timezone` that names no zone is no longer ignored: it is reported, with the
   name, while the configuration is read, so `validate` and every other command
   refuse the file instead of scheduling jobs in an unexpected zone.
+- The overlap policy of a job is applied to a trigger when it arrives, before
+  the job waits for a free slot. With the default `max_parallel_jobs = 1`, a
+  trigger that arrived while the job was still running waited for the slot and
+  then ran the job, instead of being recorded as a `skipped` run as
+  [scheduling.md](docs/scheduling.md) promises. A `queued` run now also waits
+  for the run of its own job before it takes a slot.
 
 ## [0.2.0] - 2026-10-08
 

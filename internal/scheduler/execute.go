@@ -19,41 +19,69 @@ func (s *Scheduler) Execute(ctx context.Context, name string, trigger time.Time)
 		return "", fmt.Errorf("job %q is not configured", name)
 	}
 
-	release, proceed := s.acquire(definition)
-	if !proceed {
-		reason := fmt.Sprintf("a previous run is still in progress and the overlap policy is %q", definition.Overlap)
-		if err := s.store.RecordSkipped(ctx, name, s.clock.Now(), reason); err != nil {
+	decision := s.acquire(definition)
+	if !decision.proceed {
+		if err := s.recordSkip(ctx, definition); err != nil {
 			return "", err
 		}
-		s.logger.Info("skipped a run", "job", name, "reason", reason)
 		return job.StatusSkipped, nil
 	}
-	defer release()
+	defer decision.release()
+
+	// A run that was asked for is not dropped: when the policy is `queue` it
+	// waits for the run of the same job that is in progress.
+	decision.wait()
 
 	return s.attempt(ctx, definition, trigger), nil
 }
 
-// acquire applies the overlap policy of a job. It returns whether the run may
-// proceed, together with the function that releases the job.
-func (s *Scheduler) acquire(definition job.Job) (func(), bool) {
+// gate is the decision the overlap policy of a job takes for one trigger.
+type gate struct {
+	// proceed reports whether the trigger leads to a run at all. When it is
+	// false the trigger is recorded as skipped and the other fields are not
+	// used.
+	proceed bool
+	// wait blocks until the job may run. It returns at once for every policy
+	// that does not have to wait for the run in progress.
+	wait func()
+	// release gives the job back once its run is over.
+	release func()
+}
+
+// acquire applies the overlap policy of a job to one trigger.
+//
+// The decision belongs to the trigger, not to the run: it is taken when the
+// activation arrives, so that a trigger which finds the job running is skipped
+// as configured, whatever the scheduler is busy with at that moment.
+func (s *Scheduler) acquire(definition job.Job) gate {
 	lock, known := s.locks[definition.Name]
 	if !known {
-		return func() {}, true
+		return gate{proceed: true, wait: func() {}, release: func() {}}
 	}
 
 	switch definition.Overlap {
 	case job.OverlapSkip:
 		if !lock.TryLock() {
-			return nil, false
+			return gate{}
 		}
-		return lock.Unlock, true
+		return gate{proceed: true, wait: func() {}, release: lock.Unlock}
 	case job.OverlapQueue:
-		lock.Lock()
-		return lock.Unlock, true
+		return gate{proceed: true, wait: lock.Lock, release: lock.Unlock}
 	default:
 		// OverlapAllow and anything unexpected run straight away.
-		return func() {}, true
+		return gate{proceed: true, wait: func() {}, release: func() {}}
 	}
+}
+
+// recordSkip records that a trigger did not lead to a run because the job was
+// already running.
+func (s *Scheduler) recordSkip(ctx context.Context, definition job.Job) error {
+	reason := fmt.Sprintf("a previous run is still in progress and the overlap policy is %q", definition.Overlap)
+	if err := s.store.RecordSkipped(ctx, definition.Name, s.clock.Now(), reason); err != nil {
+		return err
+	}
+	s.logger.Info("skipped a run", "job", definition.Name, "reason", reason)
+	return nil
 }
 
 // attempt runs a job, retrying while it does not succeed.

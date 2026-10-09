@@ -78,24 +78,49 @@ func (s *Scheduler) begin(ctx context.Context) error {
 	return nil
 }
 
-// dispatch starts every job that is due. A job waits for a free slot, so at
-// most the configured number of jobs run at the same time.
+// dispatch starts every job that is due.
+//
+// Each trigger is judged by the overlap policy of its job when it arrives, and
+// always before the job waits for a free slot: a trigger that arrives while the
+// job is still running is skipped as configured, even when the only slot is the
+// one the run in progress is holding.
 func (s *Scheduler) dispatch(ctx context.Context, now time.Time) {
 	for _, activation := range s.Due(now) {
-		s.running.Add(1)
-		go func(activation Activation) {
-			defer s.running.Done()
-
-			select {
-			case s.slots <- struct{}{}:
-			case <-ctx.Done():
-				return
-			}
-			defer func() { <-s.slots }()
-
-			if _, err := s.Execute(ctx, activation.Job.Name, activation.At); err != nil {
-				s.logger.Error("running a job failed", "job", activation.Job.Name, "error", err)
-			}
-		}(activation)
+		s.start(ctx, activation)
 	}
+}
+
+// start prepares one activation. Whether it leads to a run is decided now, when
+// it was triggered, and never revisited; the run itself waits for the previous
+// run of the same job and then for a free slot.
+func (s *Scheduler) start(ctx context.Context, activation Activation) {
+	s.running.Add(1)
+
+	decision := s.acquire(activation.Job)
+	if !decision.proceed {
+		defer s.running.Done()
+		if err := s.recordSkip(ctx, activation.Job); err != nil {
+			s.logger.Error("recording a skipped run failed", "job", activation.Job.Name, "error", err)
+		}
+		return
+	}
+
+	go func() {
+		defer s.running.Done()
+		defer decision.release()
+
+		// The run of the same job comes first: a trigger does not take a slot
+		// to sit on while it waits its turn.
+		decision.wait()
+
+		select {
+		case s.slots <- struct{}{}:
+		case <-ctx.Done():
+			return
+		}
+		defer func() { <-s.slots }()
+
+		// The outcome is recorded in the history and in the run log.
+		s.attempt(ctx, activation.Job, activation.At)
+	}()
 }
