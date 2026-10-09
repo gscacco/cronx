@@ -83,6 +83,9 @@ type Storage struct {
 	// state. Empty means the default under the home directory, resolved by
 	// StatePath.
 	Path string
+	// MaxRuns is how many runs of each job the history keeps. Zero means it
+	// keeps all of them.
+	MaxRuns int
 }
 
 // Config is the desired configuration of the scheduler.
@@ -220,6 +223,15 @@ func Parse(data []byte) (*Config, error) {
 				"logging.max_backups must be at least 1, got %d", *raw.Logging.MaxBackups))
 		default:
 			cfg.Logging.MaxBackups = *raw.Logging.MaxBackups
+		}
+	}
+
+	if raw.Storage.MaxRuns != nil {
+		if *raw.Storage.MaxRuns < 1 {
+			problems = append(problems, fmt.Errorf(
+				"storage.max_runs must be at least 1, got %d", *raw.Storage.MaxRuns))
+		} else {
+			cfg.Storage.MaxRuns = *raw.Storage.MaxRuns
 		}
 	}
 
