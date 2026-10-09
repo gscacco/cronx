@@ -76,9 +76,9 @@ func newInitCommand(configPath *string) *cobra.Command {
 		Short: "Write a configuration file to start from",
 		Long: "Write a configuration file at the path the configuration is looked for\n" +
 			"in, creating the directory it lives in.\n\n" +
-			"The two required fields of one job are set, and every other option cronx\n" +
-			"knows is written next to them commented out, with what it does and what\n" +
-			"happens without it, so that the file can be read as its own reference.\n\n" +
+			"The fields one job needs are set, and every other option cronx knows is\n" +
+			"written next to them commented out, with what it does and what happens\n" +
+			"without it, so that the file can be read as its own reference.\n\n" +
 			"A file that already exists is never replaced: the command stops instead,\n" +
 			"names the file and leaves it untouched. --force replaces it.",
 		Args: cobra.NoArgs,

@@ -40,6 +40,11 @@ Implemented:
   `Local` for the zone of the machine.
 - **One configuration file.** Every job is described in the same TOML file, which
   is validated before anything runs and whose problems are all reported at once.
+- **A configuration to start from.** `cronx init` writes a file with the fields
+  one job needs set and every other option commented out and explained, so the
+  file doubles as a reference. The directory and the file get the permissions of
+  everything else cronx writes, and a configuration that is already there is
+  never replaced.
 - **No shell.** A job is started directly as an executable plus a list of
   arguments; the path must be absolute and the arguments are passed verbatim.
 - **Per-job execution policy.** `args`, `working_directory`, `env`, `timeout`,
@@ -78,9 +83,9 @@ Implemented:
 - **One scheduler per state.** `cronx run` holds a lease on the state, so a
   second one refuses to start instead of scheduling the same jobs again;
   `cronx status` says who is running and until when.
-- **Command line.** `validate`, `list`, `status`, `history`, `logs`, `run-once`,
-  `run` and `version`, with a `--config` flag; `run-once` exits non-zero when the
-  job fails, so it can be used from scripts.
+- **Command line.** `init`, `validate`, `list`, `status`, `history`, `logs`,
+  `run-once`, `run` and `version`, with a `--config` flag; `run-once` exits
+  non-zero when the job fails, so it can be used from scripts.
 - **A change without a restart.** A running scheduler reads its configuration
   again when it is sent `SIGHUP`: a job that was added, removed or rescheduled
   takes effect at once, and a file that cannot be used is refused while the
@@ -200,6 +205,19 @@ Only `schedule` and `command` are required; every other field has a default.
 > [Scheduling](docs/scheduling.md) for the expression syntax and the overlap,
 > retry and parallelism policies.
 
+### Writing a configuration to start from
+
+```sh
+cronx init
+```
+
+It writes `~/.cronx/config.toml`, or the file `--config` or `CRONX_CONFIG`
+names, creating the directory it lives in. One job is set, and every other option
+is written next to it commented out, with what it does and what happens without
+it, so that the file can be read as its own reference. A configuration that is
+already there is never replaced: the command stops and names the file, and
+`cronx init --force` is what replaces it.
+
 ### Running the scheduler
 
 ```sh
@@ -301,16 +319,14 @@ go build -o bin/cronx ./cmd/cronx
 
 **2. Create a configuration with one job**
 
-```sh
-cat > ~/.cronx/config.toml <<'EOF'
-[jobs.hello]
-schedule = "*/5 * * * *"
-command = "/bin/echo"
-args = ["hello from cronx"]
-EOF
+```console
+$ ./bin/cronx init
+/home/user/.cronx/config.toml written
 ```
 
-(create `~/.cronx` first if it does not exist yet: `mkdir -p ~/.cronx`).
+The file it writes defines one job named `hello`, which runs `/bin/echo` every
+five minutes, and documents every other option as a comment. Add your own jobs to
+it, with a `command` that exists on your machine.
 
 **3. Check the file before trusting it**
 

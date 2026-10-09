@@ -17,6 +17,12 @@ locations (`/usr/local/bin/...`). cronx never runs a job through a shell and
 never looks a command up in `PATH`, so replace them with programs that exist on
 your machine before running anything.
 
+`cronx init` writes a file of the same shape to `~/.cronx/config.toml` when
+there is not one yet: one job set, and every option below it commented out with
+what it does and what happens without it. The tests keep the two in step: every
+option the reference configuration uses has to be documented in the file the
+command writes. See [cli.md](cli.md).
+
 ## Trying an example
 
 A configuration file is only ever read: cronx never rewrites it, and the runtime

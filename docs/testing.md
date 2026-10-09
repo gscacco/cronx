@@ -57,6 +57,7 @@ being tested.
 | `paths_test.go` | the run log and the status database are written where `[logging].path` and `[storage].path` say, and nowhere else |
 | `timezone_test.go` | the next run is computed on the clock of `[scheduler].timezone`, not on the clock of the machine |
 | `configuration_test.go` | a configuration that is wrong in one way is rejected by every command, with a useful explanation and without touching the state; the configuration is found through `--config`, `CRONX_CONFIG` or the home directory |
+| `init_test.go` | `cronx init` writes a configuration where the flag, the environment variable or the home directory says, with the permissions everything else gets, refuses to replace a file that exists without `--force`, and leaves the installation otherwise untouched |
 
 The race two processes can meet when they open a brand new database at the same
 moment, and the outcome of a run that is in flight when the scheduler stops, are
@@ -116,6 +117,14 @@ The nights a clock moves are checked the same way, in `internal/schedule`: the
 activation after a daylight saving transition is asked for directly, because no
 test can wait for one to arrive. What the two rules in
 [scheduling.md](scheduling.md) promise is what the test reads back.
+
+The file `cronx init` writes is checked at both levels, because what it holds is
+documentation that has to stay true. `internal/cli` reads the written file back
+and holds it to three promises: it is a valid configuration both as it stands and
+with every commented option turned on, it does not repeat an option the file
+already sets, and every option the reference configuration uses is documented in
+it. `test/integration` runs the command against a fresh installation, through
+`--config` and `CRONX_CONFIG`, and checks that it writes nothing but that file.
 
 ## How the tests are put together
 
