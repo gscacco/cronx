@@ -34,8 +34,9 @@ not frozen yet, so details may still change between releases.
 Implemented:
 
 - **Cron-style schedules.** Five-field expressions with ranges, lists, steps and
-  month or day-of-week names, for example `0 9-17 * * mon-fri`, and the
-  descriptors of a fixed time, from `@yearly` to `@hourly`.
+  month or day-of-week names, for example `0 9-17 * * mon-fri`, the descriptors
+  of a fixed time, from `@yearly` to `@hourly`, and an optional seconds field for
+  a job that runs more than once a minute.
 - **Jobs that run at startup.** `@reboot` runs a job once, when the scheduler
   starts, so a cache can be warmed or a queue drained with the same file that
   schedules everything else.

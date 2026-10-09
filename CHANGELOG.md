@@ -32,6 +32,15 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
   previous process are closed first. A reload that turns a job into one of these
   does not run it — a scheduler that is already running is not a start — and says
   so in its log, so the job is not waited for in vain (D42).
+- An optional seconds field: an expression may state the seconds as a sixth field
+  in front of the five, which is what makes a job run more than once a minute.
+  The seconds field accepts the same forms as the others — `*`, values, ranges,
+  lists and steps — and a five-field expression is unchanged, its activations
+  being on the minute because the seconds it leaves unsaid are zero. Activations
+  are computed to the second, and each one is judged by the overlap policy of the
+  job like any other trigger. A schedule with a seconds field does not catch up
+  any more than any other: a job that fires every ten seconds is not run thirty
+  times to make up for a stop (D43).
 
 ## [0.4.0] - 2026-10-09
 
