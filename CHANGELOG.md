@@ -8,6 +8,8 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-09
+
 ### Added
 
 - One scheduler per state: `cronx run` takes a lease on the state, renews it
