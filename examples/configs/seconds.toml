@@ -1,0 +1,20 @@
+# A job does not have to wait for the minute: an expression may state the seconds
+# as well, as a sixth field in front of the five. What is left out is zero, which
+# is why the expressions of every other example run on the minute.
+#
+#   cronx validate --config examples/configs/seconds.toml
+#   cronx list     --config examples/configs/seconds.toml
+#
+# As in full.toml, the commands are placeholders: cronx only ever runs an
+# absolute path.
+
+# The seconds field holds the same operators as the others: here every tenth
+# second of every minute.
+[jobs.heartbeat]
+schedule = "*/10 * * * * *"        # second 0, 10, 20, 30, 40 and 50 of every minute
+command = "/usr/local/bin/heartbeat"
+
+# A list of seconds is what a job that polls twice a minute asks for.
+[jobs.poller]
+schedule = "0,30 * * * * *"        # at :00 and :30 of every minute
+command = "/usr/local/bin/poller"

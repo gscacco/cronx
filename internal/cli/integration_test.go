@@ -76,6 +76,13 @@ var referenceExamples = []struct {
 			{name: "reboot", schedule: "@reboot", next: startupNext},
 		},
 	},
+	{
+		file: "seconds.toml",
+		jobs: []referenceJob{
+			{name: "heartbeat", schedule: "*/10 * * * * *"},
+			{name: "poller", schedule: "0,30 * * * * *"},
+		},
+	},
 }
 
 // examplePath returns the path of a reference configuration.
@@ -99,19 +106,18 @@ func listRow(t *testing.T, output, job string) []string {
 // listColumns splits a row of "list" into the schedule and what the NEXT column
 // says: an instant, shown as a date, a time and a zone, the marker of a job that
 // runs when the scheduler starts, or a single dash for a job that never runs. A
-// schedule is five fields, or one descriptor, which is one field on its own;
-// whatever follows it is the NEXT column, which checkNext reads.
-func listColumns(t *testing.T, fields []string) (schedule, next string) {
+// row carries no separators, so the expression the job is expected to have is
+// what says where the schedule ends: five fields, six with the seconds field in
+// front of them, or one descriptor, which is a field on its own. Whatever follows
+// it is the NEXT column, which checkNext reads.
+func listColumns(t *testing.T, fields []string, expression string) (schedule, next string) {
 	t.Helper()
-	scheduleFields := 5
-	if len(fields) > 1 && strings.HasPrefix(fields[1], "@") {
-		scheduleFields = 1
-	}
-	if len(fields) < 1+scheduleFields+1 {
+	width := len(strings.Fields(expression))
+	if len(fields) < 1+width+1 {
 		t.Fatalf("list row = %v, want a job, a schedule and a NEXT column", fields)
 	}
-	schedule = strings.Join(fields[1:1+scheduleFields], " ")
-	return schedule, strings.Join(fields[1+scheduleFields:], " ")
+	schedule = strings.Join(fields[1:1+width], " ")
+	return schedule, strings.Join(fields[1+width:], " ")
 }
 
 // startupNext is what the NEXT column says of a job that runs when the
@@ -176,7 +182,7 @@ func TestReferenceConfigurationsListTheirJobs(t *testing.T) {
 				t.Fatalf("list returned an unexpected error: %v", err)
 			}
 			for _, job := range example.jobs {
-				schedule, next := listColumns(t, listRow(t, output, job.name))
+				schedule, next := listColumns(t, listRow(t, output, job.name), job.schedule)
 				if schedule != job.schedule {
 					t.Errorf("%s: schedule = %q, want %q", job.name, schedule, job.schedule)
 				}

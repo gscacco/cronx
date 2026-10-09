@@ -11,8 +11,10 @@ import (
 // The scheduling tests run the real scheduler, which plans its activations from
 // a cron expression and therefore works to the minute. They wait for what the
 // job does instead of sleeping, which is what makes them both deterministic and
-// slower than the rest: they are the only tests of this package that wait for a
-// real minute boundary, so they skip themselves under `go test -short`.
+// slower than the rest: they wait for a real minute boundary, so they skip
+// themselves under `go test -short`. A schedule with a seconds field fires
+// inside the minute instead of on it, so the test of that one waits for seconds
+// and runs in the fast suite as well (see seconds_test.go).
 
 func TestAScheduledJobRunsAndIsRecorded(t *testing.T) {
 	// A scheduled run waits for a real minute boundary. It is the cost of

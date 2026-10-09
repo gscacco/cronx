@@ -28,9 +28,10 @@ const (
 	jobHelperPlaceholder = "@JOB_HELPER@"
 )
 
-// The budgets the tests wait with. They are generous on purpose: cronx
-// schedules to the minute, which is the finest granularity a cron expression
-// supports, so "the job runs soon" can legitimately take almost a minute.
+// The budgets the tests wait with. They are generous on purpose: a cron
+// expression schedules to the second at its finest, but the scheduling tests
+// use five-field expressions, whose activations are a minute apart, so "the job
+// runs soon" can legitimately take almost a minute.
 //
 // Only the scheduling tests wait that long, because they are the only ones that
 // need a real activation: they run in parallel, and the fast suite (go test
@@ -43,6 +44,11 @@ const (
 	// activationBudget covers the wait for the next minute boundary plus the
 	// time the run itself needs.
 	activationBudget = 75 * time.Second
+	// secondsBudget covers an activation that is seconds away, which is what a
+	// schedule with a seconds field has. It is a fraction of activationBudget
+	// on purpose: a test that waits for it is watching a job fire inside the
+	// minute rather than on it.
+	secondsBudget = 30 * time.Second
 	// overlapBudget covers two activations, because a run is only skipped by
 	// the activation that arrives after the first one.
 	overlapBudget = 150 * time.Second
