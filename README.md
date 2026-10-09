@@ -34,7 +34,8 @@ not frozen yet, so details may still change between releases.
 Implemented:
 
 - **Cron-style schedules.** Five-field expressions with ranges, lists, steps and
-  month or day-of-week names, for example `0 9-17 * * mon-fri`.
+  month or day-of-week names, for example `0 9-17 * * mon-fri`, and the
+  descriptors of a fixed time, from `@yearly` to `@hourly`.
 - **The zone you schedule in.** `[scheduler].timezone` chooses the clock
   activation times are computed on: an IANA name such as `Europe/Rome`, or
   `Local` for the zone of the machine.
@@ -188,7 +189,7 @@ path = "/var/log/cronx/runs.log"  # optional: where every job's output is writte
 path = "/var/lib/cronx/state.db"  # optional: the status database
 
 [jobs.backup]
-schedule = "0 3 * * *"            # five-field cron expression
+schedule = "0 3 * * *"            # a cron expression, or @daily for midnight
 command = "/usr/local/bin/backup" # required, absolute path
 args = ["--incremental"]          # passed verbatim, never through a shell
 timeout = "30m"

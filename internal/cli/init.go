@@ -47,7 +47,9 @@ const configTemplate = `# The configuration of cronx: the jobs to run, and the s
 # path = "/var/lib/cronx/state.db"   # the history and the runtime state (default: ~/.cronx/state.db)
 # max_runs = 1000               # how many runs of every job the history keeps (default: all of them)
 
-# A job is one [jobs.<name>] table; the name may hold letters, digits, - and _.
+# The jobs. A job is one [jobs.<name>] table; the name may hold letters, digits,
+# - and _. Its schedule is a five-field cron expression, or a descriptor that
+# stands for a fixed time: @yearly, @monthly, @weekly, @daily, @midnight, @hourly.
 [jobs.hello]
 schedule = "*/5 * * * *"        # a five-field cron expression: every five minutes
 command = "/bin/echo"           # required, an absolute path: cronx never looks a command up in PATH
