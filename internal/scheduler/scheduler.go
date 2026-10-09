@@ -52,19 +52,30 @@ type Activation struct {
 
 // Scheduler runs the configured jobs when they are due.
 type Scheduler struct {
+	store  *store.Store
+	logs   *logx.Log
+	runner *runner.Runner
+	clock  clock.Clock
+	logger *slog.Logger
+	holder string
+
+	// mu guards everything a reload can replace while the scheduler runs: the
+	// configuration, the schedules parsed from it, the locks that apply the
+	// overlap policies and the activations planned for the jobs.
+	mu        sync.RWMutex
 	config    config.Config
-	store     *store.Store
-	logs      *logx.Log
-	runner    *runner.Runner
-	clock     clock.Clock
-	logger    *slog.Logger
-	holder    string
 	schedules map[string]schedule.Schedule
 	names     []string
 	next      map[string]time.Time
 	locks     map[string]*sync.Mutex
-	slots     chan struct{}
-	running   sync.WaitGroup
+
+	// slots bounds how many jobs run at the same time. It is set once, when
+	// the scheduler is built: a reload applies the jobs, not the limit.
+	slots chan struct{}
+	// reload wakes the run loop when a reload has moved an activation the
+	// loop is waiting for.
+	reload  chan struct{}
+	running sync.WaitGroup
 }
 
 // New builds a Scheduler. It fails when the configuration cannot be prepared,
@@ -105,6 +116,7 @@ func New(options Options) (*Scheduler, error) {
 		next:      make(map[string]time.Time, len(options.Config.Jobs)),
 		locks:     make(map[string]*sync.Mutex, len(options.Config.Jobs)),
 		slots:     make(chan struct{}, parallel),
+		reload:    make(chan struct{}, 1),
 	}
 
 	names := make([]string, 0, len(options.Config.Jobs))

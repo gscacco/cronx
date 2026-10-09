@@ -82,6 +82,10 @@ Implemented:
 - **Command line.** `validate`, `list`, `status`, `history`, `logs`, `run-once`,
   `run` and `version`, with a `--config` flag; `run-once` exits non-zero when the
   job fails, so it can be used from scripts.
+- **A change without a restart.** A running scheduler reads its configuration
+  again when it is sent `SIGHUP`: a job that was added, removed or rescheduled
+  takes effect at once, and a file that cannot be used is refused while the
+  scheduler keeps running.
 
 Not implemented yet:
 
@@ -207,6 +211,9 @@ The scheduler stays in the foreground, writes to the standard error and to
 `~/.cronx/logs/cronx.log`, and stops on `Ctrl-C` (`SIGINT`) or `SIGTERM`: the
 jobs still running are stopped with it, and it waits for them before exiting. To
 keep it running permanently, use the service manager of your operating system.
+A change to the configuration does not need a restart: send it `SIGHUP` and it
+reads the file again, applying the jobs the file holds; see
+[Command line](docs/cli.md).
 
 ### Inspecting jobs, history and state
 

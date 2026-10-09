@@ -14,7 +14,9 @@ import (
 // Execute runs a job once, applying the overlap and retry policies, and records
 // the outcome. The trigger instant is the time the run was scheduled for.
 func (s *Scheduler) Execute(ctx context.Context, name string, trigger time.Time) (job.Status, error) {
+	s.mu.RLock()
 	definition, known := s.config.Jobs[name]
+	s.mu.RUnlock()
 	if !known {
 		return "", fmt.Errorf("job %q is not configured", name)
 	}
@@ -54,7 +56,9 @@ type gate struct {
 // activation arrives, so that a trigger which finds the job running is skipped
 // as configured, whatever the scheduler is busy with at that moment.
 func (s *Scheduler) acquire(definition job.Job) gate {
+	s.mu.RLock()
 	lock, known := s.locks[definition.Name]
+	s.mu.RUnlock()
 	if !known {
 		return gate{proceed: true, wait: func() {}, release: func() {}}
 	}

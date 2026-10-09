@@ -173,6 +173,23 @@ A scheduler that is killed outright cannot give the lease back, so it keeps the
 state for at most thirty seconds, the lifetime of a lease. `cronx status`
 reports the scheduler that holds the state, if any.
 
+A change to the configuration file does not need a restart. Send the scheduler
+`SIGHUP` (`kill -HUP 4182`) and it reads the file again:
+
+```console
+$ kill -HUP 4182
+```
+
+The jobs of the new file take effect from that moment: a job whose schedule
+changed follows the new one, a job that was added is picked up, and a job that is
+gone is never run again. Runs in progress are left alone. A file that cannot be
+read or used is refused — the scheduler records why, and keeps running with the
+configuration it has — and a change to `[scheduler]`, `[logging]` or `[storage]`
+cannot reach a process that is already running: it is reported and ignored, and
+needs a restart. The reload is recorded in the scheduler log, which
+`cronx logs --follow` does not read; watch `~/.cronx/logs/cronx.log` or the
+standard error of `cronx run` to see it happen.
+
 ## version
 
 ```console

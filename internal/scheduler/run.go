@@ -55,6 +55,11 @@ func (s *Scheduler) Run(ctx context.Context) (err error) {
 		case <-runCtx.Done():
 			timer.Stop()
 			return nil
+		case <-s.reload:
+			// A reload moved the activations, so the wait is worked out
+			// again rather than served to the end.
+			timer.Stop()
+			continue
 		case <-timer.C:
 			s.dispatch(runCtx, s.clock.Now())
 		}
@@ -75,10 +80,11 @@ func (s *Scheduler) begin(ctx context.Context) error {
 	}
 
 	s.plan(s.clock.Now())
-	for _, name := range s.names {
+	names := s.jobList()
+	for _, name := range names {
 		s.prune(ctx, name)
 	}
-	s.logger.Info("scheduler started", "jobs", len(s.names))
+	s.logger.Info("scheduler started", "jobs", len(names))
 	return nil
 }
 
@@ -101,7 +107,9 @@ func (s *Scheduler) dispatch(ctx context.Context, now time.Time) {
 // keeps. A history that cannot be trimmed is reported but does not stop the
 // scheduler: running the jobs matters more than the bookkeeping.
 func (s *Scheduler) prune(ctx context.Context, name string) {
+	s.mu.RLock()
 	keep := s.config.Storage.MaxRuns
+	s.mu.RUnlock()
 	if keep < 1 {
 		return
 	}

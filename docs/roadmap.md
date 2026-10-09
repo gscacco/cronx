@@ -101,7 +101,9 @@ scheduler refuses to start — so the release is a `MINOR`.
 - [x] Pruning for the history: `[storage].max_runs` keeps the newest runs of
   each job and deletes the rest, so that the database stops growing without
   bound (D38).
-- [ ] Reload the configuration on `SIGHUP`, so a change does not need a restart.
+- [x] Reload the configuration on `SIGHUP`, so a change does not need a restart:
+  the jobs of the new file take effect at once, while a change to a setting of
+  the scheduler itself is reported and needs one (D39).
 
 ### 0.5.0 — cron expressiveness
 

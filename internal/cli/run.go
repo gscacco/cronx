@@ -47,6 +47,10 @@ func newRunCommand(configPath *string) *cobra.Command {
 			}
 			defer func() { _ = environment.close() }()
 
+			// A configuration change does not need a restart: the scheduler
+			// reloads the file whenever it is sent SIGHUP.
+			go watchForReload(ctx, path, environment.scheduler, environment.logger)
+
 			return environment.scheduler.Run(ctx)
 		},
 	}

@@ -1,0 +1,10 @@
+# Configuration a scheduler is started with, before it is asked to reload.
+#
+# The job never runs, so a test that reloads the file does not have to wait for
+# an activation or for a process: what it reads is what the scheduler recorded
+# about the reload itself.
+
+[jobs.steady]
+schedule = "0 0 31 4 *"
+command = "@JOB_HELPER@"
+args = ["out", "steady"]
