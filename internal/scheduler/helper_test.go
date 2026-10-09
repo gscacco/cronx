@@ -139,7 +139,7 @@ func openTestState(t *testing.T, clk clock.Clock) (*store.Store, *logx.Log) {
 	}
 	t.Cleanup(func() { _ = persistent.Close() })
 
-	runs := logx.Open(filepath.Join(t.TempDir(), "logs", "runs.log"), clk)
+	runs := logx.Open(filepath.Join(t.TempDir(), "logs", "runs.log"), clk, logx.Rotation{})
 	t.Cleanup(func() { _ = runs.Close() })
 
 	return persistent, runs
