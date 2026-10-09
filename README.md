@@ -63,15 +63,19 @@ Implemented:
 - **Logs.** Every run appends to one run log, whose lines carry the time, the
   job, the run and the pid, plus the scheduler's own log file; both readable
   only by their owner.
+- **Reading the log back.** `cronx logs [job]` prints the run log, so the output
+  of a run can be read without knowing where the file is: a job name selects one
+  job, `--since` leaves out what is older, and `--follow` keeps printing as the
+  log grows.
 - **Restart behaviour.** Runs left in progress by a process that died are closed
   on the next start, and activations missed while cronx was not running are not
   replayed.
 - **One scheduler per state.** `cronx run` holds a lease on the state, so a
   second one refuses to start instead of scheduling the same jobs again;
   `cronx status` says who is running and until when.
-- **Command line.** `validate`, `list`, `status`, `history`, `run-once`, `run` and
-  `version`, with a `--config` flag; `run-once` exits non-zero when the job fails,
-  so it can be used from scripts.
+- **Command line.** `validate`, `list`, `status`, `history`, `logs`, `run-once`,
+  `run` and `version`, with a `--config` flag; `run-once` exits non-zero when the
+  job fails, so it can be used from scripts.
 
 Not implemented yet:
 
@@ -205,6 +209,8 @@ cronx list                     # configured jobs and when each runs next
 cronx status                   # the last outcome of every job
 cronx history                  # the last 20 runs, newest first
 cronx history backup --limit 5 # only one job, fewer rows
+cronx logs backup              # what the runs of one job printed
+cronx logs --follow            # the output of every job, as it arrives
 ```
 
 ### Running a job by hand
@@ -244,8 +250,9 @@ It prints the version of cronx and reads no configuration.
 | `~/.cronx/state.db`        | The history and the runtime state, as SQLite. |
 
 The run log and the status database can be moved with `[logging].path` and
-`[storage].path`; see [Configuration](docs/configuration.md). There is no
-`cronx logs` command: read the files directly, with `tail -f`, `cat`, or
+`[storage].path`; see [Configuration](docs/configuration.md). `cronx logs` reads
+the run log back — `cronx logs backup`, `cronx logs --since 1h --follow` — and
+the other files can be read directly, with `cat` or
 `sqlite3 ~/.cronx/state.db`. The logs are appended to, no log is ever rotated
 automatically, and only their owner can read them.
 
@@ -330,7 +337,7 @@ $ ./bin/cronx history
 ID  JOB    ATTEMPT  STATUS     STARTED                   DURATION  EXIT
 1   hello  1        succeeded  2026-10-04 22:19:11 CEST  2ms       0
 
-$ cat ~/.cronx/logs/runs.log
+$ cronx logs
 2026-10-04T22:19:11Z hello id=1 pid=4213 hello from cronx
 ```
 

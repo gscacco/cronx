@@ -8,6 +8,15 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 
 ## [Unreleased]
 
+### Added
+
+- `cronx logs [job]`, to read the run log from the command line: with a job name
+  only the lines of that job, without one the lines of every job. `--since`
+  leaves out what was written before a duration counted back from now (`30m`) or
+  before an RFC 3339 instant, and `--follow` keeps printing as the log grows. The
+  command reads the log and nothing else: it opens no state, writes nothing and
+  creates nothing (D36).
+
 ## [0.3.0] - 2026-10-09
 
 ### Added

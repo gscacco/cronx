@@ -16,6 +16,7 @@ under `~/.cronx/` unless the configuration moves them; see
 | `list` | Show the configured jobs, their schedule and when each runs next. |
 | `status` | Show the last outcome of every job and whether a run is in progress. |
 | `history [job]` | Show the execution history, newest first. |
+| `logs [job]` | Print the output of the runs, as the run log holds it. |
 | `run-once <job>` | Run a job immediately, whatever its schedule. |
 | `run` | Run the scheduler in the foreground until it is stopped. |
 | `version` | Print the version of cronx. |
@@ -96,6 +97,30 @@ Each row is one attempt. The `DURATION` is how long the process ran and `EXIT`
 is its exit status, shown as a dash when no process ran, as for a run skipped by
 the overlap policy.
 
+## logs
+
+```console
+$ cronx logs backup
+2026-10-06T03:00:00Z backup id=12 pid=4182 starting the backup
+2026-10-06T03:00:01Z backup id=12 pid=4182 done
+
+$ cronx logs --since 1h --follow
+```
+
+It prints the run log, oldest line first, exactly as it is written: with a job
+name only that job's lines, without one the lines of every job. `--since` leaves
+out what was written before the given moment, written either as a duration
+counted back from now (`30m`, `2h`) or as an RFC 3339 instant
+(`2026-10-06T03:00:00Z`). `--follow` keeps printing as the log grows, until the
+command is interrupted, which is what `tail -f` does for a file.
+
+The log is the file `[logging].path` points at, `~/.cronx/logs/runs.log` by
+default. The command reads it and nothing else: it opens no state database,
+writes nothing and creates nothing, so it is safe to run while a scheduler is
+running and its output can be piped. A line that is not a run log line — a file
+that is not the run log, or something a person appended — is left out. When no
+line matches, nothing is printed and the exit status is still `0`.
+
 ## run-once
 
 ```console
@@ -167,4 +192,5 @@ can be told apart:
 Both files are appended to and are never rotated automatically, and only their
 owner can read them. Their location can be moved with `[logging] path` (the run
 log) and `[storage] path` (the status database): see
-[configuration.md](configuration.md).
+[configuration.md](configuration.md). The run log is the file `cronx logs` reads
+back, so the lines above are what that command prints.
