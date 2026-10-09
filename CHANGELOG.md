@@ -8,6 +8,8 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-09
+
 ### Added
 
 - `cronx logs [job]`, to read the run log from the command line: with a job name
