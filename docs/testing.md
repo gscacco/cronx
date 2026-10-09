@@ -118,6 +118,16 @@ activation after a daylight saving transition is asked for directly, because no
 test can wait for one to arrive. What the two rules in
 [scheduling.md](scheduling.md) promise is what the test reads back.
 
+Catch-up and a job that is disabled are rules about what the scheduler does over
+time, so `internal/scheduler` owns them and seeds the history they need: it
+records a run in the past and starts a scheduler over it, to check that a job
+that asks is run once however many activations it missed, that a job that does
+not ask is not run, that what was caught up is not caught up again at the next
+start, that an empty history, an `@reboot` job and a reload catch nothing up, and
+that a disabled job has no activation, no run and no catch-up until a reload
+enables it. `internal/cli` lists the reference configuration that disables a job,
+so that the `disabled` the `NEXT` column prints is the one a person reads.
+
 The file `cronx init` writes is checked at both levels, because what it holds is
 documentation that has to stay true. `internal/cli` reads the written file back
 and holds it to three promises: it is a valid configuration both as it stands and

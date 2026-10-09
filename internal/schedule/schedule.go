@@ -8,8 +8,15 @@
 // "@hourly", which stand for a fixed time, together with "@reboot", which runs
 // the job when the scheduler starts. The seconds field is the one a five-field
 // expression leaves unsaid, and it means zero there: an activation is on the
-// minute unless the expression says otherwise. The non-standard "L", "W" and "#"
-// operators are not supported.
+// minute unless the expression says otherwise.
+//
+// The two day fields accept the day operators as well, which name days a plain
+// value cannot. In the day-of-month field, "L" is the last day of the month,
+// "LW" the last weekday of it and "<n>W" the weekday nearest to its n-th day. In
+// the day-of-week field, "L" is the last day of the week, which is Saturday
+// where Sunday is the first one, "<n>L" the last occurrence of a weekday in the
+// month and "<n>#<m>" its m-th. An operator is a whole list element: it carries
+// no range and no step, and "1,15,L" is a list of three days.
 //
 // When both the day-of-month and the day-of-week fields are restricted, a day
 // matches if either of them matches, following the traditional cron behaviour.
@@ -39,16 +46,16 @@ const maxSearchYears = 12
 // The zero value is not usable: obtain a Schedule with Parse. A Schedule is
 // immutable and therefore safe for concurrent use.
 type Schedule struct {
-	expression  string
-	seconds     uint64
-	minutes     uint64
-	hours       uint64
-	daysOfMonth uint64
-	months      uint64
-	daysOfWeek  uint64
-	// domStar and dowStar record whether the field was written as "*".
-	domStar bool
-	dowStar bool
+	expression string
+	seconds    uint64
+	minutes    uint64
+	hours      uint64
+	months     uint64
+	// dayOfMonth and dayOfWeek are the two day fields, which alone accept the
+	// day operators: each holds the days its plain values select, the ones its
+	// operators select, and whether it was written as "*".
+	dayOfMonth dayOfMonth
+	dayOfWeek  dayOfWeek
 	// hasSeconds records that the expression states the seconds as well, which
 	// is what a six-field expression does: it is the difference between an
 	// activation that may be anywhere inside the minute and one that is always
@@ -116,13 +123,13 @@ func parseFields(written, expression string) (Schedule, error) {
 	if parsed.hours, _, err = parseField(hourField, fields[1]); err != nil {
 		return Schedule{}, err
 	}
-	if parsed.daysOfMonth, parsed.domStar, err = parseField(dayOfMonthField, fields[2]); err != nil {
+	if parsed.dayOfMonth, err = parseDayOfMonth(fields[2]); err != nil {
 		return Schedule{}, err
 	}
 	if parsed.months, _, err = parseField(monthField, fields[3]); err != nil {
 		return Schedule{}, err
 	}
-	if parsed.daysOfWeek, parsed.dowStar, err = parseField(dayOfWeekField, fields[4]); err != nil {
+	if parsed.dayOfWeek, err = parseDayOfWeek(fields[4]); err != nil {
 		return Schedule{}, err
 	}
 
@@ -187,18 +194,15 @@ func (s Schedule) firstCandidate(after time.Time) time.Time {
 // matchesDay reports whether the calendar day matches the day-of-month and
 // day-of-week fields. When both are restricted, either matching is enough.
 func (s Schedule) matchesDay(t time.Time) bool {
-	dayOfMonth := hasBit(s.daysOfMonth, t.Day())
-	dayOfWeek := hasBit(s.daysOfWeek, int(t.Weekday()))
-
 	switch {
-	case s.domStar && s.dowStar:
+	case s.dayOfMonth.star && s.dayOfWeek.star:
 		return true
-	case s.domStar:
-		return dayOfWeek
-	case s.dowStar:
-		return dayOfMonth
+	case s.dayOfMonth.star:
+		return s.dayOfWeek.matches(t)
+	case s.dayOfWeek.star:
+		return s.dayOfMonth.matches(t)
 	default:
-		return dayOfMonth || dayOfWeek
+		return s.dayOfMonth.matches(t) || s.dayOfWeek.matches(t)
 	}
 }
 

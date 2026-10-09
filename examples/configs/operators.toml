@@ -1,0 +1,51 @@
+# The two day fields name days that a plain value cannot, with the operators L, W
+# and #: the last day of a month, the last weekday of one, the weekday nearest to
+# a day, and the last or the n-th occurrence of a weekday.
+#
+#   cronx validate --config examples/configs/operators.toml
+#   cronx list     --config examples/configs/operators.toml
+#
+# As in full.toml, the commands are placeholders: cronx only ever runs an
+# absolute path.
+
+# L in the day of month is the last day of the month, whether the month ends on
+# the 28th, the 30th or the 31st.
+[jobs.month-close]
+schedule = "0 0 L * *"          # at midnight on the last day of every month
+command = "/usr/local/bin/close-month"
+
+# LW is the last weekday of the month: the last day of it that is neither a
+# Saturday nor a Sunday, which is what a report that must not land on a weekend
+# asks for.
+[jobs.report]
+schedule = "0 7 LW * *"         # at 07:00 on the last weekday of every month
+command = "/usr/local/bin/report"
+
+# <n>W is the weekday nearest to the n-th day of the month: the day itself when
+# it is a weekday, the Friday before a Saturday, the Monday after a Sunday. A
+# month whose length is under n is a month where the job does not run.
+[jobs.invoice]
+schedule = "0 9 15W * *"        # at 09:00 on the weekday nearest to the 15th
+command = "/usr/local/bin/invoice"
+
+# In the day of week field L is the last day of the week, which is Saturday where
+# Sunday is the first day of it.
+[jobs.sweep]
+schedule = "0 4 * * L"          # at 04:00 every Saturday
+command = "/usr/local/bin/sweep"
+
+# <weekday>L is the last occurrence of a weekday in the month.
+[jobs.cleanup]
+schedule = "0 22 * * 5L"        # at 22:00 on the last Friday of every month
+command = "/usr/local/bin/cleanup"
+
+# <weekday>#<n> is the n-th occurrence of a weekday in the month, counted from 1.
+# A month that holds only four of them is a month where the job does not run.
+[jobs.rotation]
+schedule = "30 3 * * sun#1"     # at 03:30 on the first Sunday of every month
+command = "/usr/local/bin/rotate-keys"
+
+# An operator is a list element like a plain value, so a list may mix the two.
+[jobs.payroll]
+schedule = "0 6 1,15,L * *"     # at 06:00 on the 1st, the 15th and the last day
+command = "/usr/local/bin/payroll"

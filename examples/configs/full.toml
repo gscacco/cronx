@@ -24,7 +24,9 @@ max_runs = 500                      # keep the newest 500 runs of every job
 
 # A long job that must not overlap with itself: a trigger arriving while the
 # previous run is still going is recorded as skipped. It is retried twice
-# before giving up, and it is stopped if it exceeds its timeout.
+# before giving up, and it is stopped if it exceeds its timeout. Like every job
+# that asks for it with `catch_up`, it is run once at the next start if one of
+# its activations passed while cronx was not running.
 [jobs.backup]
 schedule = "0 3 * * *"              # every day at 03:00
 command = "/usr/local/bin/backup"
@@ -35,6 +37,7 @@ retry = 2
 overlap = "skip"
 working_directory = "/srv/backup"
 env = { BACKUP_TIER = "gold" }
+catch_up = true                     # make up for a run missed while cronx was stopped
 
 # A frequent job whose runs are cheap and independent: every trigger runs, even
 # while a previous run is still going.
@@ -58,3 +61,10 @@ env = { REINDEX_SHARDS = "4", REINDEX_BATCH = "500" }
 [jobs.leap-check]
 schedule = "0 0 31 4 *"
 command = "/usr/local/bin/leap-check"
+
+# A definition that is kept without being scheduled: `cronx list` names it, its
+# history stays where it is, and nothing triggers it until it is enabled again.
+[jobs.archiver]
+schedule = "0 5 * * 0"              # Sundays at 05:00, once it is enabled
+command = "/usr/local/bin/archive"
+enabled = false

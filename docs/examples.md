@@ -8,10 +8,11 @@ stale: the test suite reads the same files, so an example that stops being valid
 | File | What it is for |
 | ---- | -------------- |
 | [`minimal.toml`](../examples/configs/minimal.toml) | The smallest configuration cronx accepts: one job, the two required fields. |
-| [`full.toml`](../examples/configs/full.toml) | Every field of a job, plus the global scheduler and logging settings, all three overlap policies and a schedule that can never match. |
+| [`full.toml`](../examples/configs/full.toml) | Every field of a job, plus the global scheduler and logging settings, all three overlap policies, a schedule that can never match and a job that is kept without being scheduled. |
 | [`maintenance.toml`](../examples/configs/maintenance.toml) | A realistic set-up for a single server: backup, log rotation, vacuum, report. |
 | [`descriptors.toml`](../examples/configs/descriptors.toml) | The descriptors cronx accepts: the six fixed times, each next to the expression it stands for, and `@reboot`. |
 | [`seconds.toml`](../examples/configs/seconds.toml) | The seconds field: two jobs that run several times a minute. |
+| [`operators.toml`](../examples/configs/operators.toml) | The `L`, `W` and `#` day operators: seven jobs, each schedule naming a day a plain value cannot. |
 | [`broken.toml`](../examples/configs/broken.toml) | Deliberately invalid: the reference for what the diagnostics look like. |
 
 The commands of the valid examples are placeholders pointing at the usual
@@ -37,6 +38,7 @@ examples/configs/minimal.toml is valid
 
 $ cronx list --config examples/configs/full.toml
 JOB         SCHEDULE     NEXT
+archiver    0 5 * * 0    disabled
 backup      0 3 * * *    2026-10-05 03:00:00 CEST
 leap-check  0 0 31 4 *   -
 metrics     */5 * * * *  2026-10-04 21:40:00 CEST
@@ -94,14 +96,23 @@ and then uses every per-job field at least once:
 
 | Job | Demonstrates |
 | --- | ------------ |
-| `backup` | `args`, `timeout`, `grace_period`, `retry`, `overlap = "skip"`, `working_directory`, `env` |
+| `backup` | `args`, `timeout`, `grace_period`, `retry`, `overlap = "skip"`, `working_directory`, `env`, `catch_up = true` |
 | `metrics` | `overlap = "allow"`: every trigger runs, even while the previous run is still going |
 | `reindex` | `overlap = "queue"`: a trigger arriving while a run is in progress waits for it |
 | `leap-check` | a valid expression that can never match, because 31 April does not exist |
+| `archiver` | `enabled = false`: the definition and the history are kept, and nothing schedules it |
 
 `leap-check` is kept on purpose. An expression cronx cannot parse is rejected by
 `validate`, while one that simply never matches is accepted: `cronx list` shows a
 dash in the `NEXT` column and the scheduler never triggers the job.
+
+`archiver` is kept on purpose as well, as a job that is not scheduled: `cronx
+list` says `disabled` in its `NEXT` column, its history stays where it is, and
+`enabled = true` is what starts it running. `backup` shows the other side of a
+quiet job: it is scheduled as usual, and `catch_up = true` adds the run it missed
+while cronx was not running. Both options are described in
+[scheduling.md](scheduling.md), and in the field reference of
+[configuration.md](configuration.md).
 
 ## maintenance.toml
 
@@ -176,6 +187,42 @@ poller     0,30 * * * * *  2026-10-09 21:17:00 CEST
 A job that fires this often is judged by its overlap policy every time it fires,
 which is worth remembering for one that takes longer than the interval; see
 [scheduling.md](scheduling.md).
+
+## operators.toml
+
+The two day fields name days that no plain value can: the last day of a month,
+the last weekday of one, the weekday nearest to a day, and the last or the n-th
+occurrence of a weekday in a month.
+
+| Job | Schedule | Time |
+| --- | -------- | ---- |
+| `month-close` | `0 0 L * *` | At midnight on the last day of every month. |
+| `report` | `0 7 LW * *` | At 07:00 on the last weekday of every month. |
+| `invoice` | `0 9 15W * *` | At 09:00 on the weekday nearest to the 15th. |
+| `sweep` | `0 4 * * L` | At 04:00 every Saturday. |
+| `cleanup` | `0 22 * * 5L` | At 22:00 on the last Friday of every month. |
+| `rotation` | `30 3 * * sun#1` | At 03:30 on the first Sunday of every month. |
+| `payroll` | `0 6 1,15,L * *` | At 06:00 on the 1st, the 15th and the last day of every month. |
+
+An operator is kept as it was written, in the SCHEDULE column as well as in the
+configuration:
+
+```console
+$ cronx list --config examples/configs/operators.toml
+JOB          SCHEDULE        NEXT
+cleanup      0 22 * * 5L     2026-10-30 22:00:00 CET
+invoice      0 9 15W * *     2026-10-15 09:00:00 CEST
+month-close  0 0 L * *       2026-10-31 00:00:00 CET
+payroll      0 6 1,15,L * *  2026-10-15 06:00:00 CEST
+report       0 7 LW * *      2026-10-30 07:00:00 CET
+rotation     30 3 * * sun#1  2026-11-01 03:30:00 CET
+sweep        0 4 * * L       2026-10-10 04:00:00 CEST
+```
+
+None of these jobs names a day that some months do not have — a `31W`, say, or a
+fifth Saturday — because such a job would not run in those months at all, and
+`cronx list` would show the next month that does have the day. That rule and the
+operators themselves are in [scheduling.md](scheduling.md).
 
 ## broken.toml
 

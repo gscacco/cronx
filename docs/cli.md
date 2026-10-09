@@ -51,7 +51,10 @@ happens without it, so that the file can be read as its own reference:
 # - and _. Its schedule is a cron expression of five fields, or of six with the
 # seconds field in front of them, or a descriptor: @yearly, @monthly, @weekly,
 # @daily, @midnight and @hourly stand for a fixed time, and @reboot runs the job
-# once, when the scheduler starts.
+# once, when the scheduler starts. The two day fields also accept the day
+# operators: L for the last day of a month or of a week, LW for the last weekday
+# of a month, nW for the weekday nearest to its n-th day, and nL and n#m for the
+# last and the n-th occurrence of a weekday in a month.
 [jobs.hello]
 schedule = "*/5 * * * *"        # a five-field cron expression: every five minutes
 command = "/bin/echo"           # required, an absolute path: cronx never looks a command up in PATH
@@ -97,7 +100,9 @@ A job whose expression can never match, such as `0 0 31 4 *`, is shown with a
 dash in the `NEXT` column. A job that runs when the scheduler starts, which is
 what `@reboot` asks for, says `at startup` there instead: it is waiting for a
 scheduler that is not running, which is a different thing from a schedule that
-can never match.
+can never match. A job that is kept without being scheduled, which is what
+`enabled = false` asks for, says `disabled`: it has no activation at all until it
+is enabled again. See [configuration.md](configuration.md).
 
 The `NEXT` column is a wall clock in the zone of `[scheduler].timezone`: with
 `timezone = "Europe/Rome"` the times above are Rome's, whatever zone the machine
@@ -184,6 +189,10 @@ output goes to the run log. The overlap and retry policies, the timeout and the
 grace period of the job still apply: a `run-once` that arrives while the job is
 already running is skipped when the overlap policy is `skip`.
 
+A job that is disabled is run like any other one. What `enabled = false` turns
+off is the scheduling, not the job, and this command is an action of the person
+running it.
+
 `run-once` takes no lease on the state: it is an action of the person running it,
 not a scheduler driving the state, so it runs whether or not `cronx run` is
 running.
@@ -222,8 +231,9 @@ $ kill -HUP 4182
 ```
 
 The jobs of the new file take effect from that moment: a job whose schedule
-changed follows the new one, a job that was added is picked up, and a job that is
-gone is never run again. Runs in progress are left alone. A file that cannot be
+changed follows the new one, a job that was added is picked up, a job that is
+gone is never run again, and a job that was disabled — or enabled again — is
+scheduled accordingly. Runs in progress are left alone. A file that cannot be
 read or used is refused — the scheduler records why, and keeps running with the
 configuration it has — and a change to `[scheduler]`, `[logging]` or `[storage]`
 cannot reach a process that is already running: it is reported and ignored, and

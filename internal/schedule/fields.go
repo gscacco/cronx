@@ -16,6 +16,11 @@ type fieldSpec struct {
 	names map[string]int
 	// normalize rewrites an accepted number into its canonical form.
 	normalize func(int) int
+	// operators records that the field is one of the two day fields, which
+	// alone accept the "L", "W" and "#" operators. The others name the day
+	// fields when one of the operators turns up in them, instead of
+	// reporting it as a value they do not know.
+	operators bool
 }
 
 var (
@@ -25,7 +30,9 @@ var (
 	minuteField = fieldSpec{name: "minute", min: 0, max: 59}
 	hourField   = fieldSpec{name: "hour", min: 0, max: 23}
 
-	dayOfMonthField = fieldSpec{name: "day of month", min: 1, max: 31}
+	// The two day fields are the ones that accept the day operators; see
+	// dayops.go.
+	dayOfMonthField = fieldSpec{name: "day of month", min: 1, max: 31, operators: true}
 	monthField      = fieldSpec{name: "month", min: 1, max: 12, names: monthNames}
 
 	// Sunday may be written as 0 or as 7, so the day-of-week field accepts
@@ -36,6 +43,7 @@ var (
 		max:       7,
 		names:     dayNames,
 		normalize: normalizeWeekday,
+		operators: true,
 	}
 )
 
@@ -156,6 +164,11 @@ func parseValue(field fieldSpec, text string) (int, error) {
 
 	value, err := strconv.Atoi(text)
 	if err != nil {
+		if !field.operators && strings.ContainsAny(text, "LW#") {
+			return 0, fmt.Errorf(
+				"%s field: %q is not a valid value: the L, W and # day operators belong to the day of month and day of week fields",
+				field.name, text)
+		}
 		return 0, fmt.Errorf("%s field: %q is not a valid value", field.name, text)
 	}
 	if value < field.min || value > field.max {

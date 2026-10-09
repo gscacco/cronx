@@ -51,7 +51,10 @@ const configTemplate = `# The configuration of cronx: the jobs to run, and the s
 # - and _. Its schedule is a cron expression of five fields, or of six with the
 # seconds field in front of them, or a descriptor: @yearly, @monthly, @weekly,
 # @daily, @midnight and @hourly stand for a fixed time, and @reboot runs the job
-# once, when the scheduler starts.
+# once, when the scheduler starts. The two day fields also accept the day
+# operators: L for the last day of a month or of a week, LW for the last weekday
+# of a month, nW for the weekday nearest to its n-th day, and nL and n#m for the
+# last and the n-th occurrence of a weekday in a month.
 [jobs.hello]
 schedule = "*/5 * * * *"        # a five-field cron expression: every five minutes
 command = "/bin/echo"           # required, an absolute path: cronx never looks a command up in PATH
@@ -62,6 +65,8 @@ args = ["hello from cronx"]     # passed to the program as they are, never throu
 # overlap = "skip"              # skip | allow | queue: what a trigger does while a run is in progress
 # working_directory = "/tmp"    # where the program runs (default: the directory of the scheduler)
 # env = { TIER = "gold" }       # extra variables for the process, which inherits nothing else
+# enabled = true                # false keeps the definition and the history, and stops running it
+# catch_up = true               # run once at the next start if a run was missed while cronx was stopped
 
 # Add the jobs you need, pointing command at programs of your machine, then:
 #

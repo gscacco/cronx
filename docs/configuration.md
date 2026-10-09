@@ -69,6 +69,8 @@ retry = 2
 overlap = "skip"
 working_directory = "/var/lib/backup"
 env = { TIER = "gold" }
+enabled = true                    # false keeps the definition without running it
+catch_up = true                   # make up for a run missed while cronx was stopped
 ```
 
 ## Field reference
@@ -165,7 +167,7 @@ The job name is the TOML table key. It must match `[A-Za-z0-9_-]+`.
 
 | Field               | Type              | Default  | Notes |
 | ------------------- | ----------------- | -------- | ----- |
-| `schedule`          | string            | -        | Required. A cron expression: five fields, six with the seconds field in front of them, or a descriptor such as `@daily` (see `docs/scheduling.md`). |
+| `schedule`          | string            | -        | Required. A cron expression: five fields, six with the seconds field in front of them, or a descriptor such as `@daily`. The two day fields also take the `L`, `W` and `#` operators (see `docs/scheduling.md`). |
 | `command`           | string            | -        | Required. Absolute path of the executable. |
 | `args`              | array of strings  | `[]`     | Passed to the executable verbatim. |
 | `timeout`           | string (duration) | none     | Go duration (for example `30m`, `1h30m`). Negative values are rejected. |
@@ -174,6 +176,8 @@ The job name is the TOML table key. It must match `[A-Za-z0-9_-]+`.
 | `overlap`           | string            | `"skip"` | One of `skip`, `allow`, `queue`. |
 | `working_directory` | string            | none     | Working directory of the process. |
 | `env`               | table of strings  | none     | Extra environment variables for the process. |
+| `enabled`           | boolean           | `true`   | `false` keeps the definition without scheduling it. |
+| `catch_up`          | boolean           | `false`  | Run the job once at the next start if an activation was missed while cronx was stopped. |
 
 The `working_directory`, when it is set, must exist when the job runs: a job that
 cannot be started in it is recorded as a `spawn_error`, with an explanation that
@@ -185,6 +189,23 @@ is still running, the whole process group is asked to terminate with `SIGTERM`
 and is killed with `SIGKILL` once the grace period is over. Ten seconds is the
 default; a job that needs longer to shut down cleanly asks for more. See
 [security.md](security.md) for the process group and the signals.
+
+`enabled = false` keeps a definition without scheduling it. The job is still
+part of the configuration: `cronx list` names it and says `disabled` in its
+`NEXT` column, its history and its last outcome stay where they are, and
+`cronx status` and `cronx history` report them as before. What stops is the
+scheduling: the job has no activation, nothing triggers it, and it is not caught
+up either. Setting `enabled` back to `true` and reloading is what schedules it
+again, from that moment. `cronx run-once` still runs the job: it is an action of
+the person running it rather than a scheduler trigger, and what the option turns
+off is the scheduling, not the job.
+
+`catch_up = true` asks for the activations a job missed while cronx was not
+running to be made up for. A job that asks is run **once** when the scheduler
+starts, if at least one of its activations passed after its last recorded run,
+however many of them did: starting again after a long stop is not a burst of
+runs. The rules, and what a job that has never run gets, are in
+[scheduling.md](scheduling.md).
 
 ## Validation
 

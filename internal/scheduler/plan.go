@@ -3,26 +3,27 @@ package scheduler
 import "time"
 
 // Next returns the next activation of a job after the given instant. It reports
-// false when the job does not exist, when its schedule has no activation within
-// the search horizon, and when the job runs when the scheduler starts rather
-// than on the clock.
+// false when the job does not exist, when it is disabled, when its schedule has
+// no activation within the search horizon, and when the job runs when the
+// scheduler starts rather than on the clock.
 func (s *Scheduler) Next(name string, after time.Time) (time.Time, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	parsed, known := s.schedules[name]
-	if !known {
+	if !known || !s.scheduledLocked(name) {
 		return time.Time{}, false
 	}
 	return parsed.Next(after)
 }
 
 // RunsAtStartup reports whether a job is triggered by the scheduler starting
-// rather than by the clock. It reports false for a job that does not exist.
+// rather than by the clock. It reports false for a job that does not exist and
+// for a job that is disabled, which is never triggered at all.
 func (s *Scheduler) RunsAtStartup(name string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	parsed, known := s.schedules[name]
-	return known && parsed.RunsAtStartup()
+	return known && s.scheduledLocked(name) && parsed.RunsAtStartup()
 }
 
 // Startup returns the activations a starting scheduler owes to the jobs that
@@ -34,7 +35,7 @@ func (s *Scheduler) Startup(now time.Time) []Activation {
 
 	var starting []Activation
 	for _, name := range s.names {
-		if !s.schedules[name].RunsAtStartup() {
+		if !s.scheduledLocked(name) || !s.schedules[name].RunsAtStartup() {
 			continue
 		}
 		starting = append(starting, Activation{Job: s.config.Jobs[name], At: now})
@@ -83,8 +84,14 @@ func (s *Scheduler) planLocked(after time.Time) {
 }
 
 // advanceLocked moves the next activation of a job to the first one after the
-// given instant, forgetting the job when it has none.
+// given instant, forgetting the job when it has none. A job the configuration
+// disables is forgotten as well: it has no activation to wait for, and enabling
+// it again is what plans one.
 func (s *Scheduler) advanceLocked(name string, after time.Time) {
+	if !s.scheduledLocked(name) {
+		delete(s.next, name)
+		return
+	}
 	next, ok := s.schedules[name].Next(after)
 	if !ok {
 		delete(s.next, name)

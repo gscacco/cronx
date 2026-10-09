@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -69,10 +70,13 @@ func (s *Scheduler) Run(ctx context.Context) (err error) {
 // begin prepares a run: jobs left in progress by a previous process are closed,
 // the history is trimmed to what the configuration keeps, the schedule is
 // planned again so that activations missed while cronx was not running are
-// skipped, and the jobs that run when the scheduler starts are triggered, since
-// this start is their activation.
+// skipped — unless the job asks to be caught up, which is the run the catch-up
+// step below gives it — and the jobs that run when the scheduler starts are
+// triggered, since this start is their activation.
 func (s *Scheduler) begin(ctx context.Context) error {
-	interrupted, err := s.store.InterruptStaleRuns(ctx, s.clock.Now())
+	now := s.clock.Now()
+
+	interrupted, err := s.store.InterruptStaleRuns(ctx, now)
 	if err != nil {
 		return err
 	}
@@ -80,13 +84,24 @@ func (s *Scheduler) begin(ctx context.Context) error {
 		s.logger.Warn("closed runs left in progress by a previous process", "runs", interrupted)
 	}
 
-	s.plan(s.clock.Now())
+	s.plan(now)
 	names := s.jobList()
 	for _, name := range names {
 		s.prune(ctx, name)
 	}
-	for _, activation := range s.Startup(s.clock.Now()) {
+	for _, activation := range s.Startup(now) {
 		s.start(ctx, activation)
+	}
+	// A job that asks for it is given the run cronx was not there for, once,
+	// however many of its activations passed while it was not running.
+	for _, activation := range s.catchUp(ctx, now) {
+		s.logger.Info("catching up a missed activation",
+			"job", activation.Job.Name, "at", activation.At.Format(time.RFC3339))
+		s.start(ctx, activation)
+	}
+	if disabled := s.disabledJobs(); len(disabled) > 0 {
+		s.logger.Info("jobs that are disabled are not scheduled",
+			"jobs", strings.Join(disabled, ", "))
 	}
 	s.logger.Info("scheduler started", "jobs", len(names))
 	return nil

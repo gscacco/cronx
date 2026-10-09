@@ -51,9 +51,13 @@ func newListCommand(configPath *string) *cobra.Command {
 }
 
 // nextActivationText renders when a job runs next: an instant, the marker of a
-// job that runs when the scheduler starts, or a dash when it never will.
+// job that a person disabled, the marker of a job that runs when the scheduler
+// starts, or a dash when it never will.
 func nextActivationText(environment *environment, name string, now time.Time) string {
-	if environment.scheduler.RunsAtStartup(name) {
+	switch {
+	case environment.scheduler.Disabled(name):
+		return disabledText
+	case environment.scheduler.RunsAtStartup(name):
 		return startupText
 	}
 	next, ok := environment.scheduler.Next(name, now)
@@ -68,3 +72,7 @@ func nextActivationText(environment *environment, name string, now time.Time) st
 // that is not running, which is a different thing from a schedule that can
 // never match.
 const startupText = "at startup"
+
+// disabledText is what the NEXT column says of a job the configuration keeps
+// without scheduling: it has no activation at all until it is enabled again.
+const disabledText = "disabled"

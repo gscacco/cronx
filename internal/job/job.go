@@ -71,4 +71,13 @@ type Job struct {
 	// Env holds extra environment variables for the process. The parent
 	// environment is not inherited.
 	Env map[string]string
+	// Disabled records that the job is kept without being scheduled: the
+	// scheduler holds it and `cronx list` names it, and its history stays
+	// where it is, but it has no activation and is never triggered. It is
+	// the negative of the configuration key `enabled`, so that a Job built
+	// by hand is a job that runs.
+	Disabled bool
+	// CatchUp asks for a run that was missed while the scheduler was not
+	// running to be made up for when it starts again. Off by default.
+	CatchUp bool
 }
