@@ -165,7 +165,7 @@ The job name is the TOML table key. It must match `[A-Za-z0-9_-]+`.
 
 | Field               | Type              | Default  | Notes |
 | ------------------- | ----------------- | -------- | ----- |
-| `schedule`          | string            | -        | Required. A five-field cron expression (see `docs/scheduling.md`). |
+| `schedule`          | string            | -        | Required. A cron expression: five fields, or a descriptor such as `@daily` (see `docs/scheduling.md`). |
 | `command`           | string            | -        | Required. Absolute path of the executable. |
 | `args`              | array of strings  | `[]`     | Passed to the executable verbatim. |
 | `timeout`           | string (duration) | none     | Go duration (for example `30m`, `1h30m`). Negative values are rejected. |

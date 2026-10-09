@@ -112,8 +112,9 @@ configuration keys, so it is a `MINOR`.
 - [x] `cronx init`, to write a configuration file that documents itself: the
   fields one job needs are set, and every other option is commented out with
   what it does and what happens without it (D40).
-- [ ] `@`-descriptors: `@yearly`, `@monthly`, `@weekly`, `@daily`, `@hourly`,
-  `@midnight` and `@reboot` (D19).
+- [x] The `@`-descriptors that stand for a fixed time: `@yearly`, `@monthly`,
+  `@weekly`, `@daily`, `@midnight` and `@hourly` (D41).
+- [ ] `@reboot`, to run a job once when the scheduler starts (D19).
 - [ ] An optional seconds field, for a six-field expression (D19).
 - [ ] The `L`, `W` and `#` day operators (D19).
 - [ ] Optional catch-up of runs missed while the scheduler was stopped, which

@@ -1,7 +1,7 @@
 # Scheduling
 
-cronx schedules every job with a five-field cron expression, in the spirit of
-traditional Unix `cron`.
+cronx schedules every job with a cron expression, in the spirit of traditional
+Unix `cron`: five fields, or a descriptor that stands for a fixed time.
 
 ## Expression format
 
@@ -34,8 +34,30 @@ A value that carries a step must use `*` or a range: `*/15` and `5-59/15` are
 valid, while `5/15` is rejected with an explanatory error rather than being
 given a surprising meaning.
 
-The following are deliberately **not** supported: descriptors such as `@daily`,
-a leading seconds field, the `L`, `W`, `#` and `?` operators.
+The following are deliberately **not** supported: a leading seconds field, and
+the `L`, `W`, `#` and `?` operators.
+
+## Descriptors
+
+A fixed time can be written as a descriptor instead of as five fields:
+
+| Descriptor  | Same as     | Time |
+| ----------- | ----------- | ---- |
+| `@yearly`   | `0 0 1 1 *` | midnight on 1 January |
+| `@monthly`  | `0 0 1 * *` | midnight on the first day of the month |
+| `@weekly`   | `0 0 * * 0` | midnight on Sunday |
+| `@daily`    | `0 0 * * *` | midnight every day |
+| `@midnight` | `0 0 * * *` | the same as `@daily` |
+| `@hourly`   | `0 * * * *` | the start of every hour |
+
+The names are not case-sensitive, and a descriptor is a whole expression:
+`@daily` stands alone, so a field after it is refused rather than guessed at. An
+unknown descriptor is answered with the list of the ones cronx has. `cronx list`
+prints the descriptor a job was written with, not the fields it stands for.
+
+`@reboot` is not among them: cronx has no notion of a machine booting, so a job
+that runs once when the scheduler starts is still on the
+[roadmap](roadmap.md).
 
 ## Day of month and day of week
 
@@ -133,5 +155,7 @@ its jobs before it exits.
 | `0 9-17 * * mon-fri`  | hourly from 09:00 to 17:00, on weekdays |
 | `0 0 1 * *`           | at midnight on the first day of every month |
 | `0 0 13 * fri`        | at midnight on the 13th and on every Friday |
+| `@daily`              | every day at midnight |
+| `@monthly`            | at midnight on the first day of every month |
 | `30 2 * jan,jul *`    | at 02:30 in January and in July |
 | `0 0 * * 7`           | at midnight on Sundays |

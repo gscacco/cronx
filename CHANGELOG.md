@@ -18,6 +18,12 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
   `0700` and the file with `0600`. A configuration that is already there is never
   replaced — the command stops and names the file — unless `--force` is given,
   and nothing else is touched: no state is opened and no log is created (D40).
+- `@`-descriptors for the fixed times: `@yearly`, `@monthly`, `@weekly`,
+  `@daily`, `@midnight` and `@hourly` stand for the traditional expressions
+  (`0 0 1 1 *`, `0 0 1 * *`, `0 0 * * 0`, `0 0 * * *` twice, and `0 * * * *`).
+  A descriptor is a whole expression, so fields after it are refused, and an
+  unknown one is answered with the list of the ones accepted. A job keeps the
+  descriptor it was written with, which is what `cronx list` prints (D41).
 
 ## [0.4.0] - 2026-10-09
 

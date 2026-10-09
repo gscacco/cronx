@@ -21,6 +21,8 @@ func TestParseAcceptsValidExpressions(t *testing.T) {
 		"0 0 29 2 *",
 		"59 23 31 12 6",
 		"0 0 1 JAN *",
+		"@daily",
+		"@MIDNIGHT",
 	}
 
 	for _, expression := range expressions {
@@ -56,7 +58,6 @@ func TestParseRejectsInvalidExpressions(t *testing.T) {
 		{"non numeric value", "a * * * *"},
 		{"unknown month name", "0 12 * january *"},
 		{"unknown day name", "0 0 * * someday"},
-		{"descriptor", "@daily"},
 		{"range with a missing end", "* * * * mon-"},
 		{"range with a missing start", "* * * * -fri"},
 		{"empty list item", "1,,2 * * * *"},
