@@ -142,7 +142,7 @@ reports the scheduler that holds the state, if any.
 
 ```console
 $ cronx version
-cronx 0.2.0
+cronx 0.3.0
 ```
 
 The command prints the version of cronx and nothing else, so it can be used in

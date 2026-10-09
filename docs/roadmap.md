@@ -68,26 +68,28 @@ layout is why this is a `MINOR` release and not a patch: a reader of the old
 - The run in flight when the scheduler stops is finished before it exits, instead
   of being left `running` until the next start.
 
+### 0.3.0 — 2026-10-09
+
+Scheduling you can rely on: a job starts on the clock you configured, a second
+scheduler cannot duplicate it, an overlap decision is made when the trigger
+arrives, and a job chooses how long it is given to stop. Every item changes
+behaviour a user can see — a job starts at a different moment, or a second
+scheduler refuses to start — so the release is a `MINOR`.
+
+- `[scheduler].timezone` is applied: activations are computed on the clock of the
+  configured zone, and `cronx list` prints the next run there.
+- `timezone` is validated when the configuration is read, rather than when the
+  scheduler starts, so no command schedules in an unexpected zone.
+- One scheduler per state: a second `cronx run` against the same database refuses
+  to start instead of duplicating executions, with a lease the scheduler takes,
+  renews while it runs and gives back when it stops (D34).
+- The overlap policy wins over a free slot, so a trigger that arrives while a job
+  is still running is skipped as documented even when `max_parallel_jobs = 1`
+  (D35).
+- The grace period between `SIGTERM` and `SIGKILL` is configurable per job:
+  `grace_period`.
+
 ## Planned
-
-### 0.3.0 — scheduling you can rely on
-
-Every item here changes behaviour a user can see — a job starts at a different
-moment, or a second scheduler refuses to start — so the release is a `MINOR`.
-
-- [x] Apply `[scheduler].timezone`, so that activations are computed on the
-  clock of the configured zone ([testing.md](testing.md)).
-- [x] Validate `timezone` when the configuration is read, rather than when the
-  scheduler starts ([configuration.md](configuration.md)).
-- [x] Allow one scheduler per state: a second `cronx run` against the same
-  database refuses to start instead of duplicating executions, with a lease the
-  scheduler takes, renews while it runs and gives back when it stops
-  ([testing.md](testing.md), D34).
-- [x] Make the overlap policy win over a free slot, so a trigger that arrives
-  while a job is still running is skipped as documented even when
-  `max_parallel_jobs = 1` ([testing.md](testing.md), D35).
-- [x] Make the grace period between `SIGTERM` and `SIGKILL` configurable per
-  job, which [security.md](security.md) already promises: `grace_period`.
 
 ### 0.4.0 — operability: logs and data
 
