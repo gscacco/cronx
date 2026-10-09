@@ -121,6 +121,12 @@ running and its output can be piped. A line that is not a run log line — a fil
 that is not the run log, or something a person appended — is left out. When no
 line matches, nothing is printed and the exit status is still `0`.
 
+When the run log is rotated (`[logging].max_size`), the command reads the file
+that is being written: the lines that were rotated away are in `runs.log.1` and
+the files after it, which can be read directly or with `cronx logs` after the
+file has been moved back. `--follow` notices the rotation and carries on with the
+new file.
+
 ## run-once
 
 ```console
@@ -189,8 +195,13 @@ can be told apart:
 2026-10-06T03:00:01Z backup id=12 pid=4182 done
 ```
 
-Both files are appended to and are never rotated automatically, and only their
-owner can read them. Their location can be moved with `[logging] path` (the run
-log) and `[storage] path` (the status database): see
-[configuration.md](configuration.md). The run log is the file `cronx logs` reads
-back, so the lines above are what that command prints.
+Both files are appended to and only their owner can read them. Their location
+can be moved with `[logging] path` (the run log) and `[storage] path` (the status
+database): see [configuration.md](configuration.md). The run log is the file
+`cronx logs` reads back, so the lines above are what that command prints.
+
+The run log is rotated once it would pass `[logging] max_size`, if that is
+configured: the file becomes `runs.log.1`, the files before it move one step
+back, and at most `[logging] max_backups` of them are kept. The scheduler log is
+not rotated: it holds one line per event of the scheduler itself rather than
+whatever a job prints.

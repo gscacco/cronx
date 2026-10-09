@@ -32,6 +32,8 @@ max_parallel_jobs = 2             # at least 1 (default: 1)
 [logging]
 level = "info"                    # debug | info | warn | error (default: "info")
 path  = "/var/log/cronx/runs.log" # where every job's output is written (default: ~/.cronx/logs/runs.log)
+max_size = "10MB"                 # rotate the run log past this size (default: never)
+max_backups = 3                   # how many rotated run logs are kept (default: 3)
 
 [storage]
 path = "/var/lib/cronx/state.db"  # the status database (default: ~/.cronx/state.db)
@@ -65,10 +67,41 @@ even where the system carries no `/usr/share/zoneinfo`.
 
 ### `[logging]`
 
-| Field   | Type   | Default  | Notes |
-| ------- | ------ | -------- | ----- |
-| `level` | string | `"info"` | One of `debug`, `info`, `warn`, `error`. |
-| `path`  | string | `~/.cronx/logs/runs.log` | Where the output of every job is written: a single file, shared by all runs. Optional. |
+| Field         | Type    | Default  | Notes |
+| ------------- | ------- | -------- | ----- |
+| `level`       | string  | `"info"` | One of `debug`, `info`, `warn`, `error`. |
+| `path`        | string  | `~/.cronx/logs/runs.log` | Where the output of every job is written: a single file, shared by all runs. Optional. |
+| `max_size`    | string (size) | none | Rotate the run log once it would pass this size. Optional; without it the log is never rotated. |
+| `max_backups` | integer | `3`      | How many rotated run logs are kept. Optional, and only meaningful together with `max_size`. |
+
+A size is a number of bytes, optionally followed by `KB`, `MB` or `GB`
+(case-insensitive): `"512KB"`, `"10MB"`, `"1GB"`, `"1048576"`.
+
+#### Rotation of the run log
+
+With `max_size` set, the run log stops growing without bound. When a line would
+take the file past the given size, the file is renamed to `<path>.1` before the
+line is written, the files before it move one step back — `<path>.1` becomes
+`<path>.2` — and the oldest beyond `max_backups` is deleted. A new, empty log
+takes the place of the first one.
+
+```console
+$ ls -l ~/.cronx/logs/
+runs.log      # the runs that are happening now
+runs.log.1    # the runs before them
+runs.log.2    # the runs before those
+```
+
+`runs.log.1` is therefore the most recent history and the higher the number the
+older the file. `cronx logs` reads the current file: a line that was rotated away
+is in one of the numbered files, which can be read directly.
+
+Two details are worth knowing. The rotation happens on a line boundary, so a line
+is never cut in half, and a log is never rotated before its first line: a job
+that prints more at once than the run log may hold still has that line kept,
+rather than rotated away the moment it is written. And only the run log is
+rotated. `~/.cronx/logs/cronx.log` holds one line per event of the scheduler
+itself rather than whatever a job prints, so it has no size to bound.
 
 ### `[storage]`
 
@@ -127,6 +160,11 @@ The following rules are enforced:
 - `max_parallel_jobs` must be at least 1;
 - `timezone` must be `Local` or a name the zone database knows;
 - `logging.level` must be one of `debug`, `info`, `warn`, `error`;
+- `logging.max_size`, when present, must be a size greater than zero, written as
+  a number of bytes or with a `KB`, `MB` or `GB` suffix;
+- `logging.max_backups`, when present, must be at least 1 and needs
+  `logging.max_size`: without a size nothing is rotated, so there would be
+  nothing to keep;
 - `logging.path` and `storage.path`, when present, are taken as written.
 
 Example of explicit failure, using the deliberately invalid
