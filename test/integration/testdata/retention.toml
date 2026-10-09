@@ -1,0 +1,14 @@
+# Configuration for a history that is pruned, so that a database nobody prunes
+# does not grow without bound.
+#
+# The scheduler trims the history of every job when it starts, and of a job
+# whose trigger arrives. A test records a few runs with "run-once" and then
+# starts the scheduler, which is what keeps only the newest ones.
+
+[storage]
+max_runs = 2
+
+[jobs.talker]
+schedule = "0 3 * * *"
+command = "@JOB_HELPER@"
+args = ["out", "printed by the job"]
