@@ -23,6 +23,11 @@ The rules for choosing a version are described in [docs/roadmap.md](docs/roadmap
   suffix. Without a size nothing is rotated and the log grows as before, and no
   log is rotated before its first line, so a line larger than the limit is kept
   rather than dropped (D37).
+- `[storage].max_runs` bounds the history: the scheduler keeps the newest N runs
+  of each job and deletes the rest, when it starts and whenever a trigger arrives
+  for a job, so that a scheduler left running for months does not grow the
+  database without bound either. A run still in progress is never deleted, and
+  without the key every run is kept (D38).
 
 ## [0.3.0] - 2026-10-09
 
