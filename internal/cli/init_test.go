@@ -220,16 +220,23 @@ func TestInitReplacesTheFileWhenItIsAskedTo(t *testing.T) {
 	// EXERCISE
 	_, err := runCLI(t, "init", "--force")
 
-	// VERIFY
+	// VERIFY: the file is the one init writes, and the jobs that were there
+	// are gone.
 	if err != nil {
 		t.Fatalf("init --force returned an unexpected error: %v", err)
 	}
-	after := readFile(t, path)
-	if strings.Contains(after, "backup") {
-		t.Errorf("the configuration still holds the jobs it had:\n%s", after)
+	configuration, err := config.Load(path)
+	if err != nil {
+		t.Fatalf("the configuration init wrote is not valid: %v", err)
 	}
-	if _, err := config.Load(path); err != nil {
-		t.Errorf("the configuration init wrote is not valid: %v", err)
+	if _, ok := configuration.Jobs["hello"]; !ok {
+		t.Errorf("the configuration holds %v, want the job init writes", configuration.Jobs)
+	}
+	for _, replaced := range []string{"backup", "cleanup"} {
+		if _, ok := configuration.Jobs[replaced]; ok {
+			t.Errorf("the configuration still holds the job %q it had:\n%s",
+				replaced, readFile(t, path))
+		}
 	}
 }
 
