@@ -37,6 +37,7 @@ max_backups = 3                   # how many rotated run logs are kept (default:
 
 [storage]
 path = "/var/lib/cronx/state.db"  # the status database (default: ~/.cronx/state.db)
+max_runs = 1000                   # how many runs of each job the history keeps (default: all)
 
 [jobs.backup]
 schedule = "0 3 * * *"            # required
@@ -105,14 +106,38 @@ itself rather than whatever a job prints, so it has no size to bound.
 
 ### `[storage]`
 
-| Field  | Type   | Default | Notes |
-| ------ | ------ | ------- | ----- |
-| `path` | string | `~/.cronx/state.db` | The status database: the execution history and the runtime state. Optional. |
+| Field      | Type    | Default | Notes |
+| ---------- | ------- | ------- | ----- |
+| `path`     | string  | `~/.cronx/state.db` | The status database: the execution history and the runtime state. Optional. |
+| `max_runs` | integer | none | How many runs of each job the history keeps; must be at least 1. Optional, and without it nothing is pruned. |
 
 Both `logging.path` and `storage.path` are optional. When they are absent the
 paths above are used; when they are set, cronx writes there instead. A path is
 used exactly as written (no `~` expansion), and the directories it needs are
 created when cronx first writes to it.
+
+#### Pruning the history
+
+Without `max_runs` the database keeps one row per attempt of every job, for
+ever. With it, the scheduler keeps the newest `max_runs` runs of each job and
+deletes the older ones. The trimming happens when the scheduler starts, for
+every job, and again each time a trigger arrives for a job, so that a scheduler
+left running for months bounds the database as well as one that is restarted.
+
+```console
+$ cronx history --limit 3
+ID   JOB     ATTEMPT  STATUS     STARTED                   DURATION  EXIT
+512  backup  1        succeeded  2026-10-06 03:00:00 CEST  1.2s      0
+511  backup  2        failed     2026-10-05 03:00:00 CEST  0.1s      1
+510  backup  1        failed     2026-10-05 03:00:00 CEST  0.1s      1
+```
+
+The count is per job, so a job that runs every minute cannot push the rare runs
+of another job out of the history. Two things are never deleted: a run that is
+still in progress, because its outcome has not been recorded yet, and the
+`job_state` row of each job, which holds only the last outcome and is what
+`cronx status` reads. The run log is not touched: `[logging].max_size` is what
+bounds that one.
 
 ### `[jobs.<name>]`
 
@@ -165,7 +190,8 @@ The following rules are enforced:
 - `logging.max_backups`, when present, must be at least 1 and needs
   `logging.max_size`: without a size nothing is rotated, so there would be
   nothing to keep;
-- `logging.path` and `storage.path`, when present, are taken as written.
+- `logging.path` and `storage.path`, when present, are taken as written;
+- `storage.max_runs`, when present, must be at least 1.
 
 Example of explicit failure, using the deliberately invalid
 [`examples/configs/broken.toml`](../examples/configs/broken.toml):

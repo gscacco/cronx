@@ -58,7 +58,7 @@ be triggered at once with `run-once`, whatever the schedule says.
 
 ## full.toml
 
-It opens with the two global tables:
+It opens with the three global tables:
 
 ```toml
 [scheduler]
@@ -69,14 +69,18 @@ max_parallel_jobs = 2               # at most two jobs running at the same time
 level = "debug"                     # debug | info | warn | error
 max_size = "10MB"                   # rotate the run log once it would pass this size
 max_backups = 3                     # keep the three most recent rotated run logs
+
+[storage]
+max_runs = 500                      # keep the newest 500 runs of every job
 ```
 
 The optional `[logging] path` and `[storage] path`, which move the run log and
 the status database, are described in [configuration.md](configuration.md); they
-are left out of the examples so that the files read exactly as they are. The two
-rotation settings are used here, since they change nothing about where cronx
-writes: `max_size` rotates the run log once it would pass ten megabytes, and
-`max_backups` keeps the three most recent rotated files.
+are left out of the examples so that the files read exactly as they are. The
+settings that bound what cronx keeps are used here, since they change nothing
+about where it writes: `max_size` rotates the run log once it would pass ten
+megabytes, `max_backups` keeps the three most recent rotated files, and
+`max_runs` keeps the newest five hundred runs of every job.
 
 and then uses every per-job field at least once:
 

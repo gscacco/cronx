@@ -52,6 +52,7 @@ being tested.
 | `logging_test.go` | both streams of a job are kept in the shared run log, every line carries a readable timestamp and identifies the run, and the log is readable only by its owner |
 | `logs_test.go` | `cronx logs` prints what a run printed, only for the job that is named, nothing for a job that never ran, and nothing at all before the first run |
 | `rotation_test.go` | a run log that passes its configured size is rotated, only the configured number of rotated files is kept, and no log is rotated when no size is configured |
+| `retention_test.go` | the history is trimmed to the configured number of runs of each job when the scheduler starts, and a pruned history is what `history` reports |
 | `paths_test.go` | the run log and the status database are written where `[logging].path` and `[storage].path` say, and nowhere else |
 | `timezone_test.go` | the next run is computed on the clock of `[scheduler].timezone`, not on the clock of the machine |
 | `configuration_test.go` | a configuration that is wrong in one way is rejected by every command, with a useful explanation and without touching the state; the configuration is found through `--config`, `CRONX_CONFIG` or the home directory |
@@ -93,6 +94,14 @@ a single line larger than the limit, which is kept rather than rotated away.
 for something impossible is rejected, and `test/integration` runs a job four
 times against a limit that holds one line and checks that the last three runs
 are the three files on disk.
+
+Pruning is checked at both levels as well. `internal/store` seeds a history and
+reads back which runs were deleted, per job, with a run in progress among them
+and with a keep that asks for nothing. `internal/scheduler` starts a scheduler
+over a history that is longer than the configuration keeps, and dispatches a
+trigger to a job, to check that both moments trim it. `test/integration` records
+five runs with `run-once`, starts the scheduler and stops it, and then asks
+`cronx history` what is left.
 
 The nights a clock moves are checked the same way, in `internal/schedule`: the
 activation after a daylight saving transition is asked for directly, because no

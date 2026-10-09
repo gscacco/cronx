@@ -98,7 +98,9 @@ scheduler refuses to start — so the release is a `MINOR`.
 - [x] Rotation and retention for the logs: `[logging].max_size` and
   `[logging].max_backups` keep the run log from growing without bound
   ([cli.md](cli.md), D37).
-- [ ] Pruning for the history, so that the database stops growing without bound.
+- [x] Pruning for the history: `[storage].max_runs` keeps the newest runs of
+  each job and deletes the rest, so that the database stops growing without
+  bound (D38).
 - [ ] Reload the configuration on `SIGHUP`, so a change does not need a restart.
 
 ### 0.5.0 — cron expressiveness
