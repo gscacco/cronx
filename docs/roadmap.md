@@ -93,8 +93,8 @@ scheduler refuses to start — so the release is a `MINOR`.
 
 ### 0.4.0 — operability: logs and data
 
-- [ ] `cronx logs [job] [--follow] [--since]`, so the run log can be read
-  without knowing its path ([testing.md](testing.md)).
+- [x] `cronx logs [job] [--follow] [--since]`, so the run log can be read
+  without knowing its path ([testing.md](testing.md), D36).
 - [ ] Rotation and retention for the logs, and pruning for the history, since no
   log is rotated today and the database grows without bound ([cli.md](cli.md)).
 - [ ] Reload the configuration on `SIGHUP`, so a change does not need a restart.

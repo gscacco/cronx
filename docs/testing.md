@@ -50,6 +50,7 @@ being tested.
 | `retry_test.go` | a failing job is attempted once per configured retry, every attempt is recorded separately, and the attempts stop as soon as one succeeds |
 | `persistence_test.go` | the history and the database survive a restart, and runs left in progress by a process that was killed are closed with an explanation |
 | `logging_test.go` | both streams of a job are kept in the shared run log, every line carries a readable timestamp and identifies the run, and the log is readable only by its owner |
+| `logs_test.go` | `cronx logs` prints what a run printed, only for the job that is named, nothing for a job that never ran, and nothing at all before the first run |
 | `paths_test.go` | the run log and the status database are written where `[logging].path` and `[storage].path` say, and nowhere else |
 | `timezone_test.go` | the next run is computed on the clock of `[scheduler].timezone`, not on the clock of the machine |
 | `configuration_test.go` | a configuration that is wrong in one way is rejected by every command, with a useful explanation and without touching the state; the configuration is found through `--config`, `CRONX_CONFIG` or the home directory |
@@ -74,6 +75,13 @@ a job that is still running: the second trigger has to be recorded as skipped
 while the run it overlaps is going. Reaching the same order through `cronx run`
 costs two real minute boundaries, which is what `scheduling_test.go` pays
 instead, with the default of one job at a time.
+
+The reading side of the run log is checked at both levels. `internal/logx`
+reads back the lines the writer produced, so the two cannot drift apart, and it
+rejects what is not a run log line. `internal/cli` drives `logs` against a log
+the test wrote: the lines of one job and of every job, `--since` as a duration
+and as an instant, a log that does not exist yet, a line that is not a run log
+line, and `--follow`, stopped through the context of the command.
 
 The nights a clock moves are checked the same way, in `internal/schedule`: the
 activation after a daylight saving transition is asked for directly, because no
@@ -149,11 +157,11 @@ The suite checks cronx against its documentation. Where the two do not agree,
 the disagreement is recorded here rather than papered over, and no test asserts
 either side of it.
 
-* **There is no `cronx logs` command.** [cli.md](cli.md) does not list one, so
-  the suite checks the run log directly: `~/.cronx/logs/runs.log`, whose lines
-  carry the run identifier that `cronx history` reports.
-
-A disagreement this list used to carry — a trigger that waited for a free slot
-instead of meeting the overlap policy — was resolved in 0.3.0: the policy is
-applied to a trigger when it arrives (D35), and both `test/integration` and
-`internal/scheduler` now assert the outcome with a single slot.
+Nothing is outstanding today. The disagreements this section used to carry have
+all been closed. A trigger that waited for a free slot instead of meeting the
+overlap policy was resolved in 0.3.0: the policy is applied to a trigger when it
+arrives (D35), and both `test/integration` and `internal/scheduler` now assert
+the outcome with a single slot. The absence of a `cronx logs` command was closed
+on `master` (D36): [cli.md](cli.md) lists the command and `logs_test.go` drives
+it, so reading the run log is checked through the command line rather than by
+opening the file directly.
